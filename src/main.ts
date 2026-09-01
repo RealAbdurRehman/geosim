@@ -2,10 +2,10 @@ import { type BoundingBox } from "./geo/types";
 import { getBuildings } from "./geo/OSMClient";
 
 const testArea: BoundingBox = {
-  north: 33.687,
-  south: 33.684,
-  east: 73.05,
-  west: 73.046,
+  north: 40.7595,
+  south: 40.7575,
+  east: -73.984,
+  west: -73.987,
 };
 
 const northEl = document.getElementById("north")!;
