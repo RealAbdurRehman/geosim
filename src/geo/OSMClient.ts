@@ -1,6 +1,4 @@
-import { type BoundingBox, type OSMResponse } from "./types";
-
-const OVERPASS_API = "https://overpass-api.de/api/interpreter";
+import type { BoundingBox, OSMResponse } from "./types";
 
 export async function getBuildings(bounds: BoundingBox): Promise<OSMResponse> {
   const query = `
@@ -14,7 +12,12 @@ export async function getBuildings(bounds: BoundingBox): Promise<OSMResponse> {
     out geom;
   `;
 
-  const res = await fetch(OVERPASS_API, { method: "POST", body: query });
+  const res = await fetch("/api/buildings", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: query,
+  });
+
   if (!res.ok)
     throw new Error(`Overpass request failed: ${res.status} ${res.statusText}`);
 
