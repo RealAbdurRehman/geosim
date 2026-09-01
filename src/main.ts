@@ -36,7 +36,8 @@ async function main() {
 
     dataEl.innerHTML = html;
   } catch (err) {
-    dataEl.innerHTML = `Failed to load building data: <br/> ${err}`;
+    console.error("Failed to load building data:", err);
+    dataEl.textContent = "Failed to load building data.";
   }
 }
 
