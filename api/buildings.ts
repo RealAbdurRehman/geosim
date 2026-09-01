@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const OVERPASS_API = "https://overpass-api.de/api/interpreter";
+const OVERPASS_API = "https://maps.mail.ru/osm/tools/overpass/api/interpreter";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST")
