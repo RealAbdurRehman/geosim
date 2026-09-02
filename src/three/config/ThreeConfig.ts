@@ -6,7 +6,7 @@ const Config = {
     near: 0.1,
     far: 1000,
     start: new THREE.Vector3(0, 1, 3),
-    controls: { enablePan: true, enableDamping: true, maxDistance: 120 },
+    controls: { enablePan: true, enableDamping: true, maxDistance: 750 },
   },
   lighting: {
     ambientLight: {

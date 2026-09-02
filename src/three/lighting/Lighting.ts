@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-import Config from "../config/Config";
-import enableLightShadow from "../helpers/enableLightShadow";
+import Config from "../config/ThreeConfig";
+import enableLightShadow from "../../utils/enableLightShadow";
 
 export default class Lighting {
   private readonly ambientLight: THREE.AmbientLight;

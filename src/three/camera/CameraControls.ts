@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 
-import Config from "../config/Config";
+import Config from "../config/ThreeConfig";
 
 export default class CameraControls {
   private readonly instance: OrbitControls;

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import Config from "../config/Config";
+import Config from "../config/ThreeConfig";
 
 export default class Camera {
   public readonly instance: THREE.PerspectiveCamera;

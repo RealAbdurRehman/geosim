@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import Scene from "./Scene";
 import Camera from "../camera/Camera";
 import Renderer from "./Renderer";
@@ -42,5 +44,8 @@ export default class Engine {
   };
   private addEventListeners(): void {
     window.addEventListener("resize", this.resize);
+  }
+  public add(object: THREE.Object3D): void {
+    this.scene.instance.add(object);
   }
 }
