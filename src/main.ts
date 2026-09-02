@@ -1,5 +1,7 @@
-import { type BoundingBox } from "./geo/types";
 import { getBuildings } from "./geo/OSMClient";
+import { geoPointToLocal } from "./geo/Projection";
+
+import { type BoundingBox, type GeoPoint } from "./geo/types";
 
 const testArea: BoundingBox = {
   north: 40.7595,
@@ -7,6 +9,8 @@ const testArea: BoundingBox = {
   east: -73.984,
   west: -73.987,
 };
+
+const origin: GeoPoint = { lat: testArea.south, lon: testArea.west };
 
 const northEl = document.getElementById("north")!;
 const southEl = document.getElementById("south")!;
@@ -25,14 +29,16 @@ async function main() {
     const data = await getBuildings(testArea);
 
     let html = ``;
-    for (const building of data.elements)
-      html += `<div>
-        ID: <span>${building.id}</span> <br />
-        Tags: <span>${JSON.stringify(building.tags, null, 2)}</span> <br />
-        Geometry: <span>${JSON.stringify(building.geometry, null, 2)}</span> <br />
-      </div>
-      <hr />
-      `;
+    for (const building of data.elements) {
+      if (!building.geometry) continue;
+      for (const point of building.geometry) {
+        const local = geoPointToLocal(point, origin);
+        html += `
+        <div>${JSON.stringify(local, null, 2)}</div>
+        <hr />
+        `;
+      }
+    }
 
     dataEl.innerHTML = html;
   } catch (err) {

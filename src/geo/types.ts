@@ -3,6 +3,11 @@ export interface GeoPoint {
   lon: number;
 }
 
+export interface LocalPoint {
+  x: number;
+  z: number;
+}
+
 export interface BoundingBox {
   north: number;
   south: number;
