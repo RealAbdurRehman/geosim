@@ -1,6 +1,8 @@
 import type { BoundingBox, OSMResponse } from "./types";
 
-export async function getBuildings(bounds: BoundingBox): Promise<OSMResponse> {
+export async function fetchBuildings(
+  bounds: BoundingBox,
+): Promise<OSMResponse> {
   const query = `
     [out:json];
     way["building"](

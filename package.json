@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/three": "^0.185.4",
     "@vercel/node": "^11.0.0",
     "typescript": "~6.0.2",
     "vercel": "^59.11.0",
