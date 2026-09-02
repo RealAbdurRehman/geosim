@@ -78,3 +78,29 @@ header h1 {
 #error button:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+
+#area-info {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.75rem;
+  background: rgba(20, 20, 20, 0.4);
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+#area-info p {
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+#area-info span {
+  display: block;
+  color: #aaa;
+  font-family: monospace;
+}
+
+#area-info span + span {
+  margin-top: 0.2rem;
+}

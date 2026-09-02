@@ -26,6 +26,11 @@ async function main() {
   const loading = document.getElementById("loading")!;
   const error = document.getElementById("error")!;
 
+  const latitude = document.getElementById("latitude")!;
+  const longitude = document.getElementById("longitude")!;
+  latitude.textContent = `Latitude: ${testArea.south.toFixed(4)}° — ${testArea.north.toFixed(4)}°`;
+  longitude.textContent = `Longitude: ${testArea.west.toFixed(4)}° — ${testArea.east.toFixed(4)}°`;
+
   try {
     const buildings = await loadBuildings(testArea, origin);
     for (const { osm, building } of buildings) {
