@@ -15,6 +15,7 @@ An interactive 3D disaster simulation built with real world geographic data to v
 
 - [x] 3D buildings from geographic data
 - [ ] Make buildings look visually pleasing and accurate
+- [ ] Add support for stuff like infrastructure like roads and briges and other structures different from buildings
 - [ ] Real world terrain
 - [ ] Flood simulation
 - [ ] Earthquake simulation
