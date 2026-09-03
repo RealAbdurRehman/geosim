@@ -92,7 +92,6 @@ function footprintCentroid(footprint: LocalPoint[]): LocalPoint {
   return { x: sum.x / footprint.length, z: sum.z / footprint.length };
 }
 
-// Standard ray-casting point-in-polygon test.
 function pointInPolygon(point: LocalPoint, polygon: LocalPoint[]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
