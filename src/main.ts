@@ -19,17 +19,18 @@ const origin: GeoPoint = {
   lon: (testArea.east + testArea.west) / 2,
 };
 
-async function main() {
-  const engine = new Engine();
-  engine.init();
+const latitude = document.getElementById("latitude")!;
+const longitude = document.getElementById("longitude")!;
+latitude.textContent = `Latitude: ${testArea.south.toFixed(4)}° — ${testArea.north.toFixed(4)}°`;
+longitude.textContent = `Longitude: ${testArea.west.toFixed(4)}° — ${testArea.east.toFixed(4)}°`;
 
-  const loading = document.getElementById("loading")!;
-  const error = document.getElementById("error")!;
+const loading = document.getElementById("loading")!;
+const error = document.getElementById("error")!;
+const retry = document.getElementById("retry")!;
 
-  const latitude = document.getElementById("latitude")!;
-  const longitude = document.getElementById("longitude")!;
-  latitude.textContent = `Latitude: ${testArea.south.toFixed(4)}° — ${testArea.north.toFixed(4)}°`;
-  longitude.textContent = `Longitude: ${testArea.west.toFixed(4)}° — ${testArea.east.toFixed(4)}°`;
+async function loadWorld(engine: Engine) {
+  loading.hidden = false;
+  error.hidden = true;
 
   try {
     const buildings = await loadBuildings(testArea, origin);
@@ -46,6 +47,15 @@ async function main() {
     loading.hidden = true;
     error.hidden = false;
   }
+}
+
+async function main() {
+  const engine = new Engine();
+  engine.init();
+
+  retry.addEventListener("click", () => loadWorld(engine));
+
+  await loadWorld(engine);
 }
 
 main();
