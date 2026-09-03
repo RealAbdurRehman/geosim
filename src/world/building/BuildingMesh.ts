@@ -1,7 +1,6 @@
 import * as THREE from "three";
 
 import BuildingShape from "./BuildingShape";
-import Config from "./config/BuildingConfig";
 import enableObjectShadow from "../../utils/enableObjectShadow";
 
 import type { Building } from "./types";
@@ -19,29 +18,15 @@ export default class BuildingMesh {
   private init(): void {
     enableObjectShadow({ object: this.instance });
   }
-  private getHeight(building: Building): number {
-    const tags = building.tags;
-    if (!tags) return Config.defaultBuildingHeight;
-
-    const height = Number.parseFloat(tags["height"] ?? "");
-    if (Number.isFinite(height) && height > 0) return height;
-
-    const levels = Number.parseFloat(tags["building:levels"] ?? "");
-    if (Number.isFinite(levels) && levels > 0)
-      return levels * Config.metersPerLevel;
-
-    return Config.defaultBuildingHeight;
-  }
   private getGeometry(
     building: Building,
     shape: BuildingShape,
   ): THREE.ExtrudeGeometry {
-    const geometry = new THREE.ExtrudeGeometry(shape.instance, {
-      depth: this.getHeight(building),
-      bevelEnabled: false,
-    });
+    const depth = Math.max(building.height - building.minHeight, 0.01);
+    const geometry = new THREE.ExtrudeGeometry(shape.instance, { depth });
 
     geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, building.minHeight, 0);
 
     return geometry;
   }

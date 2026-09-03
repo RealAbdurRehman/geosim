@@ -5,11 +5,10 @@ export async function fetchBuildings(
 ): Promise<OSMResponse> {
   const query = `
     [out:json];
-    way["building"](
-      ${bounds.south},
-      ${bounds.west},
-      ${bounds.north},
-      ${bounds.east}
+    (
+      way["building"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+      way["building:part"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+      relation["building"]["type"="multipolygon"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
     );
     out geom;
   `;

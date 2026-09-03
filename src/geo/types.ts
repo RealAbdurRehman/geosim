@@ -15,11 +15,19 @@ export interface BoundingBox {
   west: number;
 }
 
+export interface OSMMember {
+  type: string;
+  ref: number;
+  role: string;
+  geometry?: GeoPoint[];
+}
+
 export interface OSMElement {
   id: number;
   type: string;
   nodes?: number[];
   geometry?: GeoPoint[];
+  members?: OSMMember[];
   tags?: Record<string, string>;
   bounds?: {
     minlat: number;
