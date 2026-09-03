@@ -1,3 +1,5 @@
+import type { BuildingFeatureCategory } from "../types";
+
 const Config = {
   metersPerLevel: 3,
   metersPerRoofLevel: 2.5,
@@ -18,6 +20,13 @@ const Config = {
     warehouse: 8,
     skyscraper: 150,
   } as Record<string, number>,
+  maxFeatureAttachDistance: {
+    window: 5,
+    balcony: 5,
+    entrance: 5,
+    parking: 25,
+    garage: 0,
+  } as Record<BuildingFeatureCategory, number>,
 };
 
 export default Config;

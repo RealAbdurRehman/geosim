@@ -4,6 +4,9 @@ import { fetchWikidataHeights } from "../../geo/WikidataClient";
 import { geoPointToLocal } from "../../geo/Projection";
 import { parseBuildingAttributes } from "./BuildingAttributes";
 
+import { extractFeatures } from "./BuildingFeatures";
+import { attachFeaturesToBuildings } from "./FeatureMatcher";
+
 import type { Building, LoadedBuilding } from "./types";
 import type {
   BoundingBox,
@@ -81,7 +84,7 @@ function isSurfaceBuilding(tags?: Record<string, string>): boolean {
 }
 
 function isBuildingPart(tags?: Record<string, string>): boolean {
-  return !!tags?.["building:part"];
+  return !!tags?.["building:part"] && tags["building:part"] !== "balcony";
 }
 
 function footprintCentroid(footprint: LocalPoint[]): LocalPoint {
@@ -184,6 +187,15 @@ export default async function loadBuildings(
     const height = wikidataHeights[qid];
     if (height) building.height = height;
   }
+
+  const features = extractFeatures(data.elements, origin);
+  const featuresByBuilding = attachFeaturesToBuildings(
+    renderable.map((r) => r.building),
+    features,
+  );
+
+  for (const { building } of renderable)
+    building.features = featuresByBuilding.get(building.id) ?? [];
 
   return renderable.map(({ osm, building }) => ({ osm, building }));
 }

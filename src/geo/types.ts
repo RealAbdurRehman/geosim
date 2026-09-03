@@ -25,6 +25,8 @@ export interface OSMMember {
 export interface OSMElement {
   id: number;
   type: string;
+  lat?: number;
+  lon?: number;
   nodes?: number[];
   geometry?: GeoPoint[];
   members?: OSMMember[];

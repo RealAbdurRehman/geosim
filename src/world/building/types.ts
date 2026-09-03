@@ -79,6 +79,21 @@ export interface BuildingAttributes {
   metadata: BuildingMetadata;
 }
 
+export type BuildingFeatureCategory =
+  | "entrance"
+  | "balcony"
+  | "window"
+  | "garage"
+  | "parking";
+
+export interface BuildingFeature {
+  id: number;
+  category: BuildingFeatureCategory;
+  tags: Record<string, string>;
+  point: LocalPoint;
+  footprint?: LocalPoint[];
+}
+
 export interface Building {
   id: number;
   height: number;
@@ -86,6 +101,7 @@ export interface Building {
   footprint: LocalPoint[];
   attributes: BuildingAttributes;
   tags?: Record<string, string>;
+  features?: BuildingFeature[];
 }
 
 export interface LoadedBuilding {

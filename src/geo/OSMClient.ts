@@ -3,12 +3,20 @@ import type { BoundingBox, OSMResponse } from "./types";
 export async function fetchBuildings(
   bounds: BoundingBox,
 ): Promise<OSMResponse> {
+  const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
   const query = `
     [out:json];
     (
-      way["building"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
-      way["building:part"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
-      relation["building"]["type"="multipolygon"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
+      way["building"](${bbox});
+      way["building:part"](${bbox});
+      way["window"](${bbox});
+      way["amenity"="parking"](${bbox});
+
+      relation["building"]["type"="multipolygon"](${bbox});
+      relation["amenity"="parking"]["type"="multipolygon"](${bbox});
+
+      node["window"](${bbox});
+      node["entrance"](${bbox});
     );
     out geom;
   `;
