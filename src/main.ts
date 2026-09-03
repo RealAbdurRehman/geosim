@@ -42,7 +42,7 @@ async function loadWorld(engine: Engine) {
 
     loading.hidden = true;
   } catch (err) {
-    console.error(err);
+    console.error("Failed to load buildings:", err);
 
     loading.hidden = true;
     error.hidden = false;
