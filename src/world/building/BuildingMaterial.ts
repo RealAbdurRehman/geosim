@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import Config from "./config/BuildingConfig";
 import type { BuildingMaterialInfo } from "./types";
 
@@ -39,6 +41,19 @@ function pickVariant(colors: string[], id: number): string {
   return colors[Math.min(index, colors.length - 1)];
 }
 
+function weather(hex: string, id: number): string {
+  const color = new THREE.Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+
+  const jitter = hashToUnit(id * 7.13) - 0.5;
+  hsl.l = THREE.MathUtils.clamp(hsl.l + jitter * 0.08, 0, 1);
+  hsl.s = THREE.MathUtils.clamp(hsl.s - Math.abs(jitter) * 0.04, 0, 1);
+
+  color.setHSL(hsl.h, hsl.s, hsl.l);
+  return `#${color.getHexString()}`;
+}
+
 export function resolveBuildingMaterial(
   id: number,
   buildingType: string | undefined,
@@ -54,7 +69,8 @@ export function resolveBuildingMaterial(
     Config.defaultMaterial;
 
   const materialParams = Config.materialsByType[materialKey];
-  const color = explicitColor ?? pickVariant(materialParams.colors, id);
+  const color =
+    explicitColor ?? weather(pickVariant(materialParams.colors, id), id);
   const source: BuildingMaterialInfo["source"] =
     explicitColor || (facadeMaterial && Config.materialsByType[facadeMaterial])
       ? "osm"

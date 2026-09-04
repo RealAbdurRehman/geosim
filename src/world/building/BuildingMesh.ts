@@ -39,10 +39,11 @@ export default class BuildingMesh {
     return geometry;
   }
   private getMaterial(building: Building): THREE.Material {
-    return new THREE.MeshStandardMaterial({
+    return new THREE.MeshPhysicalMaterial({
       color: building.material.color,
       roughness: building.material.roughness,
       metalness: building.material.metalness,
+      dithering: true,
     });
   }
   public dispose(): void {
