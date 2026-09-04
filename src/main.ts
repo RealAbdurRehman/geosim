@@ -8,10 +8,10 @@ import BuildingMesh from "./world/building/BuildingMesh";
 import { type BoundingBox, type GeoPoint } from "./geo/types";
 
 const testArea: BoundingBox = {
-  north: 40.7645,
-  south: 40.7525,
-  east: -73.9765,
-  west: -73.9945,
+  north: 40.7625,
+  south: 40.7545,
+  east: -73.9795,
+  west: -73.9915,
 };
 
 const origin: GeoPoint = {
