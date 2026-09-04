@@ -1,4 +1,4 @@
-import type { LocalPoint, OSMElement } from "../../geo/types";
+import type { LocalPoint } from "../../geo/types";
 
 export type RoofShape =
   | "flat"
@@ -94,6 +94,13 @@ export interface BuildingFeature {
   footprint?: LocalPoint[];
 }
 
+export interface BuildingMaterialInfo {
+  color: string;
+  roughness: number;
+  metalness: number;
+  source: "osm" | "procedural";
+}
+
 export interface Building {
   id: number;
   height: number;
@@ -102,9 +109,9 @@ export interface Building {
   attributes: BuildingAttributes;
   tags?: Record<string, string>;
   features?: BuildingFeature[];
+  material: BuildingMaterialInfo;
 }
 
 export interface LoadedBuilding {
-  osm: OSMElement;
   building: Building;
 }

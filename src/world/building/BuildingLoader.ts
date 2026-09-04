@@ -1,11 +1,15 @@
 import { fetchBuildings } from "../../geo/OSMClient";
 import { fetchWikidataHeights } from "../../geo/WikidataClient";
 
+import { insetFootprint } from "./helpers/InsetFootprint";
+
 import { geoPointToLocal } from "../../geo/Projection";
 import { parseBuildingAttributes } from "./BuildingAttributes";
 
 import { extractFeatures } from "./BuildingFeatures";
 import { attachFeaturesToBuildings } from "./FeatureMatcher";
+
+import { resolveBuildingMaterial } from "./BuildingMaterial";
 
 import type { Building, LoadedBuilding } from "./types";
 import type {
@@ -130,10 +134,20 @@ export default async function loadBuildings(
       if (!element.geometry) continue;
       if (!isSurfaceBuilding(element.tags)) continue;
 
-      const footprint: LocalPoint[] = element.geometry.map((point) =>
+      const rawFootprint: LocalPoint[] = element.geometry.map((point) =>
         geoPointToLocal(point, origin),
       );
+
+      const isPart = isBuildingPart(element.tags);
+      const footprint = insetFootprint(rawFootprint, isPart ? -0.8 : 0);
+
       const attributes = parseBuildingAttributes(element.tags);
+      const material = resolveBuildingMaterial(
+        element.id,
+        attributes.general.type,
+        attributes.facade.material,
+        attributes.facade.colour,
+      );
 
       parsed.push({
         osm: element,
@@ -145,6 +159,7 @@ export default async function loadBuildings(
           footprint,
           attributes,
           tags: element.tags,
+          material,
         },
       });
     }

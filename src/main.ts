@@ -34,8 +34,8 @@ async function loadWorld(engine: Engine) {
 
   try {
     const buildings = await loadBuildings(testArea, origin);
-    for (const { osm, building } of buildings) {
-      const shape = new BuildingShape(osm, origin);
+    for (const { building } of buildings) {
+      const shape = new BuildingShape(building.footprint);
       const mesh = new BuildingMesh(building, shape);
       engine.add(mesh.instance);
     }

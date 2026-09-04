@@ -5,6 +5,7 @@ export default class Renderer {
   constructor() {
     this.instance = new THREE.WebGLRenderer({
       antialias: true,
+      logarithmicDepthBuffer: true,
       powerPreference: "high-performance",
       precision: "highp",
     });
