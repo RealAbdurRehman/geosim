@@ -30,6 +30,24 @@ const Config = {
     mieCoefficient: 0.005,
     mieDirectionalG: 0.9,
   },
+  clouds: {
+    bottom: 900,
+    top: 1600,
+    size: 10000,
+    density: 0.55,
+    coverage: 0.48,
+    baseStrength: 0.78,
+    detailStrength: 0.18,
+    windSpeed: 8.0,
+    stepsMin: 16,
+    stepsMax: 64,
+    lightSteps: 4,
+    lightMultiplier: 4.0,
+    ambientStrength: 0.12,
+    extinction: 0.8,
+    detailDistance: 1800,
+    renderOrder: 10,
+  },
 };
 
 export default Config;
