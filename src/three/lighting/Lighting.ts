@@ -38,4 +38,7 @@ export default class Lighting {
 
     return keyLight;
   }
+  public getSun(): THREE.DirectionalLight {
+    return this.keyLight;
+  }
 }
