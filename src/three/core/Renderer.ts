@@ -30,7 +30,7 @@ export default class Renderer {
   public render(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void {
     this.instance.render(scene, camera);
   }
-  public getDomElement(): HTMLElement {
+  public getDomElement(): HTMLCanvasElement {
     return this.instance.domElement;
   }
 }
