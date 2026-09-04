@@ -30,7 +30,7 @@ export default class Lighting {
     );
   }
   private createKeyLight(): THREE.DirectionalLight {
-    const config = Config.lighting.keyLight;
+    const config = Config.lighting.sun;
     const keyLight = new THREE.DirectionalLight(config.color, config.intensity);
 
     keyLight.position.copy(config.position);

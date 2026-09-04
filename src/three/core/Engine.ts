@@ -5,6 +5,7 @@ import Camera from "../camera/Camera";
 import Renderer from "./Renderer";
 import CameraControls from "../camera/CameraControls";
 import Lighting from "../lighting/Lighting";
+import EnvironmentSky from "../environment/Sky";
 
 export default class Engine {
   private readonly scene: Scene;
@@ -21,6 +22,7 @@ export default class Engine {
     );
 
     new Lighting(this.scene.instance);
+    new EnvironmentSky(this.scene.instance);
   }
   public init(): void {
     this.addEventListeners();

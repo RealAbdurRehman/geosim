@@ -18,11 +18,17 @@ const Config = {
       groundColor: 0x444444,
       intensity: 0.6,
     },
-    keyLight: {
+    sun: {
+      position: new THREE.Vector3(4, 25, 5),
       color: 0xffffff,
       intensity: 1.5,
-      position: new THREE.Vector3(4, 25, 5),
     },
+  },
+  sky: {
+    turbidity: 0.4,
+    rayleigh: 0.3,
+    mieCoefficient: 0.005,
+    mieDirectionalG: 0.9,
   },
 };
 
