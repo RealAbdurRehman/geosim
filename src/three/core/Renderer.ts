@@ -33,4 +33,7 @@ export default class Renderer {
   public getDomElement(): HTMLCanvasElement {
     return this.instance.domElement;
   }
+  public getInstance(): THREE.WebGLRenderer {
+    return this.instance;
+  }
 }

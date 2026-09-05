@@ -41,12 +41,12 @@ const Config = {
     windSpeed: 8.0,
     stepsMin: 16,
     stepsMax: 64,
-    lightSteps: 4,
     lightMultiplier: 4.0,
     ambientStrength: 0.12,
     extinction: 0.8,
     detailDistance: 1800,
-    renderOrder: 10,
+    noiseScale: 0.00055,
+    resolutionScale: 0.5,
   },
 };
 

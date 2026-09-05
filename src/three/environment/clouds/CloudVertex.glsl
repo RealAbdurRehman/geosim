@@ -1,5 +1,5 @@
 precision highp float;
-varying vec3 vWorldPosition;
+out vec3 vWorldPosition;
 
 void main() {
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);

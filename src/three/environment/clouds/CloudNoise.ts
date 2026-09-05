@@ -3,50 +3,38 @@ import * as THREE from "three";
 export default class CloudNoise {
   public static create(size = 64): THREE.Data3DTexture {
     const voxelCount = size * size * size;
-
     const data = new Uint8Array(voxelCount);
-
     let index = 0;
-
     for (let z = 0; z < size; z++) {
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
           const nx = x / size;
           const ny = y / size;
           const nz = z / size;
-
           const value = CloudNoise.fbm(nx, ny, nz);
-
           data[index++] = Math.floor(value * 255);
         }
       }
     }
 
     const texture = new THREE.Data3DTexture(data, size, size, size);
-
     texture.format = THREE.RedFormat;
     texture.type = THREE.UnsignedByteType;
-
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
-
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.wrapR = THREE.RepeatWrapping;
 
     texture.unpackAlignment = 1;
-
     texture.needsUpdate = true;
 
     return texture;
   }
-
   private static hash(x: number, y: number, z: number): number {
     const value = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453123;
-
     return value - Math.floor(value);
   }
-
   private static noise(x: number, y: number, z: number): number {
     const ix = Math.floor(x);
     const iy = Math.floor(y);
@@ -80,12 +68,10 @@ export default class CloudNoise {
 
     return THREE.MathUtils.lerp(nxy0, nxy1, uz);
   }
-
   private static fbm(x: number, y: number, z: number): number {
     let value = 0;
     let amplitude = 0.5;
     let frequency = 1.0;
-
     for (let i = 0; i < 5; i++) {
       value +=
         CloudNoise.noise(
