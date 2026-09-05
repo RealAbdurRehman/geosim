@@ -24,7 +24,9 @@ export function batchBuildings(
     const shape = new BuildingShape(building.footprint);
     const buildingMesh = new BuildingMesh(building, shape);
     const mat = buildingMesh.instance.material as THREE.MeshStandardMaterial;
-    const key = `${mat.color.getHexString()}_${mat.roughness}_${mat.metalness}`;
+
+    const mapId = mat.map ? mat.map.uuid : "nomap";
+    const key = `${mat.color.getHexString()}_${mat.roughness}_${mat.metalness}_${mapId}`;
     if (!groups.has(key)) groups.set(key, { material: mat, geometries: [] });
 
     groups.get(key)!.geometries.push(buildingMesh.instance.geometry);

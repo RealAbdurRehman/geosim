@@ -115,3 +115,10 @@ export interface Building {
 export interface LoadedBuilding {
   building: Building;
 }
+
+export type FacadeTextureType =
+  | "brick"
+  | "concrete"
+  | "glass"
+  | "plaster"
+  | "metal";

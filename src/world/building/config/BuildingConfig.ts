@@ -46,52 +46,91 @@ const Config = {
     brick: {
       roughness: 0.85,
       metalness: 0.0,
-      colors: ["#a68a75", "#9c8068", "#ab9280"],
+      colors: ["#b85f3c", "#a94f32", "#c66c45", "#9e472e"],
     },
     concrete: {
       roughness: 0.9,
       metalness: 0.0,
-      colors: ["#b0aca3", "#a5a099", "#bab6ad"],
+      colors: ["#bcb8b0", "#aaa69f", "#c9c5bd", "#9f9b94"],
     },
     glass: {
-      roughness: 0.25,
-      metalness: 0.2,
-      colors: ["#3a4f5c", "#344550", "#425866"],
+      roughness: 0.12,
+      metalness: 0.05,
+      colors: ["#6fa9bd", "#5795ad", "#82bdcd", "#4f8ca5"],
     },
     wood: {
       roughness: 0.75,
       metalness: 0.0,
-      colors: ["#9c8468", "#93795d", "#a58e72"],
+      colors: ["#a9784f", "#95663f", "#bd8b5c", "#855735"],
     },
     stone: {
       roughness: 0.8,
       metalness: 0.0,
-      colors: ["#a8a396", "#9d988a", "#b0aba0"],
+      colors: ["#aaa69d", "#99958c", "#bbb7ad", "#8f8b82"],
     },
     plaster: {
       roughness: 0.7,
       metalness: 0.0,
-      colors: ["#d2ccbf", "#c9c3b5", "#dad4c8"],
+      colors: ["#e0d4bd", "#d5c7ad", "#e8ddc9", "#c9baa0"],
     },
     metal: {
-      roughness: 0.4,
-      metalness: 0.5,
-      colors: ["#a8a8a5", "#9d9d9a", "#b3b3b0"],
+      roughness: 0.35,
+      metalness: 0.6,
+      colors: ["#858d91", "#70797e", "#9ca4a7", "#626b70"],
     },
     stucco: {
       roughness: 0.7,
       metalness: 0.0,
-      colors: ["#d5cebc", "#cbc4b1", "#ddd6c4"],
+      colors: ["#ded2b8", "#d2c4a7", "#e7dcc5", "#c7b99c"],
     },
     cement_block: {
       roughness: 0.85,
       metalness: 0.0,
-      colors: ["#aba69c", "#a19c92", "#b5b0a6"],
+      colors: ["#b5b0a6", "#a6a198", "#c2bdb3", "#99948b"],
     },
   } as Record<
     string,
     { roughness: number; metalness: number; colors: string[] }
   >,
+  facadeTexture: {
+    size: 512,
+    brick: {
+      rows: 16,
+      cols: 8,
+      mortarSize: 3,
+      mortarRoughness: 1.0,
+      colorVariation: 0.15,
+      roughness: { min: 180, max: 230 },
+      tileScale: [10, 10] as [number, number],
+      mortarColor: "#a89f91",
+    },
+    concrete: {
+      colorNoise: 25,
+      roughness: { base: 200, noise: 40 },
+      tileScale: [8.0, 8.0] as [number, number],
+      formworkSeam: {
+        enabled: true,
+        color: "rgba(0,0,0,0.15)",
+        width: 2,
+        position: 0.5,
+      },
+    },
+    glass: {
+      mullions: {
+        color: "#1b1e22",
+        roughnessColor: "#ffffff",
+        width: 12,
+        divisions: 4,
+      },
+      roughnessColor: "#666666",
+      tileScale: [20.0, 20.0] as [number, number],
+    },
+    plaster: {
+      colorNoise: 10,
+      roughness: { base: 160, noise: 30 },
+      tileScale: [8.0, 8.0] as [number, number],
+    },
+  },
 };
 
 export default Config;

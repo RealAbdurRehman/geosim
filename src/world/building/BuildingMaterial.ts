@@ -5,7 +5,7 @@ import type { BuildingMaterialInfo } from "./types";
 
 const NAMED_COLORS: Record<string, string> = {
   white: "#f2f2f0",
-  black: "#2b2b2b",
+  black: "#4d4d4d",
   grey: "#9a9a9a",
   gray: "#9a9a9a",
   red: "#a94442",
