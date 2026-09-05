@@ -11,18 +11,21 @@ const Config = {
   lighting: {
     ambientLight: {
       color: 0xffffff,
-      intensity: 0.3,
+      intensity: 0.1,
     },
     hemisphereLight: {
       skyColor: 0x87ceeb,
       groundColor: 0x444444,
-      intensity: 0.6,
+      intensity: 0.2,
     },
     sun: {
       position: new THREE.Vector3(4, 25, 5),
       color: 0xffffff,
       intensity: 1.5,
     },
+  },
+  environment: {
+    intensity: 0.4,
   },
   sky: {
     turbidity: 0.4,

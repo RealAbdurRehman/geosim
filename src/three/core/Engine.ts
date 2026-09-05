@@ -26,7 +26,7 @@ export default class Engine {
 
     this.timer = new THREE.Timer();
 
-    new EnvironmentSky(this.scene.instance);
+    new EnvironmentSky(this.scene.instance, this.renderer.getInstance());
     new Lighting(this.scene.instance);
 
     this.clouds = new Clouds(this.scene.instance, this.renderer.getInstance());

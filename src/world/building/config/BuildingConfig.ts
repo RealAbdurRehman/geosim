@@ -54,9 +54,9 @@ const Config = {
       colors: ["#b0aca3", "#a5a099", "#bab6ad"],
     },
     glass: {
-      roughness: 0.15,
-      metalness: 0.3,
-      colors: ["#aebcc4", "#a3b3bc", "#b8c4cb"],
+      roughness: 0.25,
+      metalness: 0.2,
+      colors: ["#3a4f5c", "#344550", "#425866"],
     },
     wood: {
       roughness: 0.75,
