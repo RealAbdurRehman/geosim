@@ -6,14 +6,13 @@ import Renderer from "./Renderer";
 import CameraControls from "../camera/CameraControls";
 import Lighting from "../lighting/Lighting";
 import EnvironmentSky from "../environment/Sky";
-import Clouds from "../environment/clouds/Clouds";
+import Clouds from "../environment/Clouds";
 
 export default class Engine {
   private readonly scene: Scene;
   private readonly camera: Camera;
   private readonly renderer: Renderer;
   private readonly cameraControls: CameraControls;
-  private readonly lighting: Lighting;
   private readonly clouds: Clouds;
   private readonly timer: THREE.Timer;
   constructor() {
@@ -25,37 +24,42 @@ export default class Engine {
       this.renderer.getDomElement(),
     );
 
-    new EnvironmentSky(this.scene.instance);
-
-    this.lighting = new Lighting(this.scene.instance);
-    this.clouds = new Clouds(this.lighting.getSun());
-
     this.timer = new THREE.Timer();
+
+    new EnvironmentSky(this.scene.instance);
+    new Lighting(this.scene.instance);
+
+    this.clouds = new Clouds(this.scene.instance, this.renderer.getInstance());
   }
   public init(): void {
     this.addEventListeners();
     window.requestAnimationFrame(this.animate);
   }
   private render(): void {
+    this.clouds.renderDepth(
+      this.renderer.getInstance(),
+      this.scene.instance,
+      this.camera.instance,
+    );
     this.renderer.render(this.scene.instance, this.camera.instance);
-    this.clouds.render(this.renderer.getInstance(), this.camera.instance);
   }
-  private update(): void {
+  private update(timestamp?: number): void {
+    this.timer.update(timestamp);
     const delta = this.timer.getDelta();
 
     this.cameraControls.update();
-    this.clouds.update(delta, this.camera.instance, this.lighting.getSun());
+    this.clouds.update(this.camera.instance, delta);
   }
-  private animate = (): void => {
+  private animate = (timestamp: number): void => {
     window.requestAnimationFrame(this.animate);
 
-    this.update();
+    this.update(timestamp);
     this.render();
   };
   private resize = (): void => {
     this.camera.resize();
     this.renderer.resize();
-    this.clouds.resize(window.innerWidth, window.innerHeight);
+    this.clouds.resize(this.renderer.getInstance());
   };
   private addEventListeners(): void {
     window.addEventListener("resize", this.resize);
