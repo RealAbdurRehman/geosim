@@ -1,9 +1,6 @@
 import Engine from "./three/core/Engine";
-
 import loadBuildings from "./world/building/BuildingLoader";
-
-import BuildingShape from "./world/building/BuildingShape";
-import BuildingMesh from "./world/building/BuildingMesh";
+import { batchBuildings } from "./world/building/BuildingBatcher";
 
 import { type BoundingBox, type GeoPoint } from "./geo/types";
 
@@ -34,11 +31,8 @@ async function loadWorld(engine: Engine) {
 
   try {
     const buildings = await loadBuildings(testArea, origin);
-    for (const { building } of buildings) {
-      const shape = new BuildingShape(building.footprint);
-      const mesh = new BuildingMesh(building, shape);
-      engine.add(mesh.instance);
-    }
+    const batchedMeshes = batchBuildings(buildings);
+    for (const mesh of batchedMeshes) engine.add(mesh);
 
     loading.hidden = true;
   } catch (err) {
@@ -54,7 +48,6 @@ async function main() {
   engine.init();
 
   retry.addEventListener("click", () => loadWorld(engine));
-
   await loadWorld(engine);
 }
 

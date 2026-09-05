@@ -10,6 +10,8 @@ function verticalNudgeFor(id: number): number {
   return (hash % 1) * 0.2;
 }
 
+const materialCache = new Map<string, THREE.MeshStandardMaterial>();
+
 export default class BuildingMesh {
   public readonly instance: THREE.Mesh;
   constructor(building: Building, shape: BuildingShape) {
@@ -28,7 +30,10 @@ export default class BuildingMesh {
     shape: BuildingShape,
   ): THREE.ExtrudeGeometry {
     const depth = Math.max(building.height - building.minHeight, 0.01);
-    const geometry = new THREE.ExtrudeGeometry(shape.instance, { depth });
+    const geometry = new THREE.ExtrudeGeometry(shape.instance, {
+      depth,
+      bevelEnabled: false,
+    });
     geometry.rotateX(-Math.PI / 2);
     geometry.translate(
       0,
@@ -39,18 +44,19 @@ export default class BuildingMesh {
     return geometry;
   }
   private getMaterial(building: Building): THREE.Material {
-    return new THREE.MeshPhysicalMaterial({
+    const key = `${building.material.color}_${building.material.roughness}_${building.material.metalness}`;
+    if (materialCache.has(key)) return materialCache.get(key)!;
+
+    const material = new THREE.MeshStandardMaterial({
       color: building.material.color,
       roughness: building.material.roughness,
       metalness: building.material.metalness,
-      dithering: true,
     });
+
+    materialCache.set(key, material);
+    return material;
   }
   public dispose(): void {
     this.instance.geometry.dispose();
-
-    const material = this.instance.material;
-    if (Array.isArray(material)) material.forEach((mat) => mat.dispose());
-    else material.dispose();
   }
 }
