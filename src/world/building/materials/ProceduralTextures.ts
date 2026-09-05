@@ -6,6 +6,7 @@ import type { FacadeTextureType } from "../types";
 interface MaterialPBRMaps {
   map: THREE.CanvasTexture;
   roughnessMap: THREE.CanvasTexture;
+  emissiveMap?: THREE.CanvasTexture;
   bumpMap?: THREE.CanvasTexture;
   tileScale: [number, number];
 }
@@ -117,53 +118,89 @@ function createConcreteTextures(baseColorHex: string): MaterialPBRMaps {
 
 function createGlassTextures(baseColorHex: string): MaterialPBRMaps {
   const config = Config.facadeTexture.glass;
-  const size = Config.facadeTexture.size;
+  const cellPx = 128;
+  const cols = config.atlasCols;
+  const rows = config.atlasRows;
+  const atlasWidth = cellPx * cols;
+  const atlasHeight = cellPx * rows;
 
   const colorCanvas = document.createElement("canvas");
   const roughCanvas = document.createElement("canvas");
-
-  colorCanvas.width = colorCanvas.height = size;
-  roughCanvas.width = roughCanvas.height = size;
+  const emissiveCanvas = document.createElement("canvas");
+  colorCanvas.width = roughCanvas.width = emissiveCanvas.width = atlasWidth;
+  colorCanvas.height = roughCanvas.height = emissiveCanvas.height = atlasHeight;
 
   const ctx = colorCanvas.getContext("2d")!;
   const roughCtx = roughCanvas.getContext("2d")!;
+  const emissiveCtx = emissiveCanvas.getContext("2d")!;
 
-  ctx.fillStyle = baseColorHex;
-  ctx.fillRect(0, 0, size, size);
+  const base = new THREE.Color(baseColorHex);
+  const frameThicknessPx = cellPx * config.frame.thickness;
+  const spandrelHeightPx = cellPx * config.spandrel.heightFraction;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * cellPx;
+      const y = row * cellPx;
 
-  roughCtx.fillStyle = config.roughnessColor;
-  roughCtx.fillRect(0, 0, size, size);
+      ctx.fillStyle = config.frame.color;
+      ctx.fillRect(x, y, cellPx, cellPx);
+      roughCtx.fillStyle = config.roughnessColor;
+      roughCtx.fillRect(x, y, cellPx, cellPx);
+      emissiveCtx.fillStyle = "#000000";
+      emissiveCtx.fillRect(x, y, cellPx, cellPx);
 
-  ctx.strokeStyle = config.mullions.color;
-  ctx.lineWidth = config.mullions.width;
+      ctx.fillStyle = config.spandrel.color;
+      ctx.fillRect(x, y + cellPx - spandrelHeightPx, cellPx, spandrelHeightPx);
 
-  roughCtx.strokeStyle = config.mullions.roughnessColor;
-  roughCtx.lineWidth = config.mullions.width;
+      const paneX = x + frameThicknessPx;
+      const paneY = y + frameThicknessPx;
+      const paneW = cellPx - frameThicknessPx * 2;
+      const paneH = cellPx - spandrelHeightPx - frameThicknessPx * 2;
 
-  const divisions = config.mullions.divisions;
-  for (let step = 0; step <= size; step += size / divisions) {
-    ctx.beginPath();
-    ctx.moveTo(step, 0);
-    ctx.lineTo(step, size);
-    ctx.stroke();
+      const tint = (Math.random() - 0.5) * config.pane.tintVariation;
+      const paneColor = base.clone().offsetHSL(0, 0, tint);
+      ctx.fillStyle = `#${paneColor.getHexString()}`;
+      ctx.fillRect(paneX, paneY, paneW, paneH);
 
-    roughCtx.beginPath();
-    roughCtx.moveTo(step, 0);
-    roughCtx.lineTo(step, size);
-    roughCtx.stroke();
+      if (Math.random() < config.pane.reflectionStreakChance) {
+        const grad = ctx.createLinearGradient(
+          paneX,
+          paneY,
+          paneX + paneW,
+          paneY + paneH,
+        );
+        grad.addColorStop(0, "rgba(255,255,255,0)");
+        grad.addColorStop(
+          0.5,
+          `rgba(255,255,255,${0.08 + Math.random() * 0.12})`,
+        );
+        grad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(paneX, paneY, paneW, paneH);
+      }
 
-    ctx.beginPath();
-    ctx.moveTo(0, step);
-    ctx.lineTo(size, step);
-    ctx.stroke();
+      const paneRoughness = THREE.MathUtils.lerp(
+        config.pane.roughness.min,
+        config.pane.roughness.max,
+        Math.random(),
+      );
+      const rVal = Math.round(paneRoughness * 255);
+      roughCtx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      roughCtx.fillRect(paneX, paneY, paneW, paneH);
 
-    roughCtx.beginPath();
-    roughCtx.moveTo(0, step);
-    roughCtx.lineTo(size, step);
-    roughCtx.stroke();
+      if (Math.random() < config.night.litProbability) {
+        emissiveCtx.fillStyle = config.night.litColor;
+        emissiveCtx.fillRect(paneX, paneY, paneW, paneH);
+      }
+    }
   }
 
-  return setupPBRMaps(colorCanvas, roughCanvas, config.tileScale);
+  return setupPBRMaps(
+    colorCanvas,
+    roughCanvas,
+    [config.moduleWidth * cols, config.moduleHeight * rows],
+    emissiveCanvas,
+  );
 }
 
 function createPlasterTextures(baseColorHex: string): MaterialPBRMaps {
@@ -214,6 +251,7 @@ function setupPBRMaps(
   colorCanvas: HTMLCanvasElement,
   roughCanvas: HTMLCanvasElement,
   tileScale: [number, number],
+  emissiveCanvas?: HTMLCanvasElement,
 ): MaterialPBRMaps {
   const map = new THREE.CanvasTexture(colorCanvas);
   map.wrapS = THREE.RepeatWrapping;
@@ -224,7 +262,15 @@ function setupPBRMaps(
   roughnessMap.wrapS = THREE.RepeatWrapping;
   roughnessMap.wrapT = THREE.RepeatWrapping;
 
-  return { map, roughnessMap, tileScale };
+  let emissiveMap: THREE.CanvasTexture | undefined;
+  if (emissiveCanvas) {
+    emissiveMap = new THREE.CanvasTexture(emissiveCanvas);
+    emissiveMap.wrapS = THREE.RepeatWrapping;
+    emissiveMap.wrapT = THREE.RepeatWrapping;
+    emissiveMap.colorSpace = THREE.SRGBColorSpace;
+  }
+
+  return { map, roughnessMap, emissiveMap, tileScale };
 }
 
 export default function getProceduralTextures(

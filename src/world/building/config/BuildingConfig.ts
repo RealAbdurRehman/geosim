@@ -116,14 +116,28 @@ const Config = {
       },
     },
     glass: {
-      mullions: {
+      moduleWidth: 5.2,
+      moduleHeight: 6,
+      atlasCols: 4,
+      atlasRows: 4,
+      frame: {
         color: "#1b1e22",
-        roughnessColor: "#ffffff",
-        width: 12,
-        divisions: 4,
+        thickness: 0.07,
+      },
+      spandrel: {
+        color: "#2b3238",
+        heightFraction: 0.1,
+      },
+      pane: {
+        roughness: { min: 0.05, max: 0.35 },
+        tintVariation: 0.12,
+        reflectionStreakChance: 0.4,
+      },
+      night: {
+        litColor: "#ffd98a",
+        litProbability: 0.1,
       },
       roughnessColor: "#666666",
-      tileScale: [20.0, 20.0] as [number, number],
     },
     plaster: {
       colorNoise: 10,

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import BuildingShape from "./BuildingShape";
 import enableObjectShadow from "../../utils/enableObjectShadow";
 import getProceduralTextures from "./materials/ProceduralTextures";
+import { registerGlassMaterial } from "./materials/NightLighting";
 
 import type { Building, FacadeTextureType } from "./types";
 import type { LocalPoint } from "../../geo/types";
@@ -112,7 +113,6 @@ export default class BuildingMesh {
     const facadeType = (building.attributes.facade.material ??
       building.attributes.general.type ??
       "concrete") as FacadeTextureType;
-
     const key = `${facadeType}_${matInfo.color}_${matInfo.roughness}`;
     if (materialCache.has(key)) return materialCache.get(key)!;
 
@@ -121,17 +121,26 @@ export default class BuildingMesh {
     const repeatV = 1 / pbr.tileScale[1];
     pbr.map.repeat.set(repeatU, repeatV);
     pbr.roughnessMap.repeat.set(repeatU, repeatV);
+    pbr.emissiveMap?.repeat.set(repeatU, repeatV);
 
-    const material = new THREE.MeshStandardMaterial({
+    const materialParams: THREE.MeshStandardMaterialParameters = {
       color: matInfo.color,
       map: pbr.map,
       roughnessMap: pbr.roughnessMap,
       roughness: matInfo.roughness,
       metalness: matInfo.metalness,
-    });
+    };
+
+    if (pbr.emissiveMap) {
+      materialParams.emissiveMap = pbr.emissiveMap;
+      materialParams.emissive = new THREE.Color(0xffffff);
+      materialParams.emissiveIntensity = 0;
+    }
+
+    const material = new THREE.MeshStandardMaterial(materialParams);
+    if (pbr.emissiveMap) registerGlassMaterial(material);
 
     materialCache.set(key, material);
-
     return material;
   }
   public dispose(): void {
