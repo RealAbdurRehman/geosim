@@ -319,6 +319,41 @@ function createPlasterTextures(
   return setupPBRMaps(colorCanvas, roughCanvas, config.tileScale);
 }
 
+function createPlainTextures(baseColorHex: string): MaterialPBRMaps {
+  const size = Config.facadeTexture.size;
+
+  const colorCanvas = document.createElement("canvas");
+  const roughCanvas = document.createElement("canvas");
+  colorCanvas.width = colorCanvas.height = size;
+  roughCanvas.width = roughCanvas.height = size;
+
+  const ctx = colorCanvas.getContext("2d")!;
+  const roughCtx = roughCanvas.getContext("2d")!;
+
+  const base = new THREE.Color(baseColorHex);
+  const imgData = ctx.createImageData(size, size);
+  const roughData = roughCtx.createImageData(size, size);
+
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * 6;
+    imgData.data[i] = THREE.MathUtils.clamp(base.r * 255 + noise, 0, 255);
+    imgData.data[i + 1] = THREE.MathUtils.clamp(base.g * 255 + noise, 0, 255);
+    imgData.data[i + 2] = THREE.MathUtils.clamp(base.b * 255 + noise, 0, 255);
+    imgData.data[i + 3] = 255;
+
+    const r = 200 + (Math.random() - 0.5) * 20;
+    roughData.data[i] = r;
+    roughData.data[i + 1] = r;
+    roughData.data[i + 2] = r;
+    roughData.data[i + 3] = 255;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  roughCtx.putImageData(roughData, 0, 0);
+
+  return setupPBRMaps(colorCanvas, roughCanvas, [8.0, 8.0]);
+}
+
 function setupPBRMaps(
   colorCanvas: HTMLCanvasElement,
   roughCanvas: HTMLCanvasElement,
@@ -340,9 +375,18 @@ export default function getProceduralTextures(
   type: FacadeTextureType,
   baseColorHex: string,
   windowStyleKey: string,
+  skipFacadeWindows: boolean,
 ): MaterialPBRMaps {
-  const cacheKey = `${type}_${baseColorHex}_${windowStyleKey}`;
+  const cacheKey = skipFacadeWindows
+    ? `plain_${baseColorHex}`
+    : `${type}_${baseColorHex}_${windowStyleKey}`;
   if (textureCache.has(cacheKey)) return textureCache.get(cacheKey)!;
+
+  if (skipFacadeWindows) {
+    const maps = createPlainTextures(baseColorHex);
+    textureCache.set(cacheKey, maps);
+    return maps;
+  }
 
   const windowStyle =
     Config.facadeTexture.window.styles[windowStyleKey] ??

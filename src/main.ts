@@ -1,8 +1,10 @@
 import Engine from "./three/core/Engine";
+import testBuildings from "./test-data/test-data.json";
 import loadBuildings from "./world/building/BuildingLoader";
 import { batchBuildings } from "./world/building/BuildingBatcher";
 
 import { type BoundingBox, type GeoPoint } from "./geo/types";
+import type { LoadedBuilding } from "./world/building/types";
 
 const testArea: BoundingBox = {
   north: 40.7625,
@@ -15,6 +17,8 @@ const origin: GeoPoint = {
   lat: (testArea.north + testArea.south) / 2,
   lon: (testArea.east + testArea.west) / 2,
 };
+
+const USE_CACHED_BUILDINGS = true;
 
 const latitude = document.getElementById("latitude")!;
 const longitude = document.getElementById("longitude")!;
@@ -30,7 +34,9 @@ async function loadWorld(engine: Engine) {
   error.hidden = true;
 
   try {
-    const buildings = await loadBuildings(testArea, origin);
+    const buildings: LoadedBuilding[] = USE_CACHED_BUILDINGS
+      ? (testBuildings as LoadedBuilding[])
+      : await loadBuildings(testArea, origin);
     const batchedMeshes = batchBuildings(buildings);
     for (const mesh of batchedMeshes) engine.add(mesh);
 

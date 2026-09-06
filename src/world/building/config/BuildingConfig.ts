@@ -6,6 +6,24 @@ const Config = {
   defaultRoofHeight: 3,
   defaultBuildingHeight: 10,
   groundFloorAdjustment: 1.5,
+  noWindowBuildingTypes: [
+    "garage",
+    "garages",
+    "carport",
+    "shed",
+    "greenhouse",
+    "hut",
+    "cabin",
+    "roof",
+    "canopy",
+    "ruins",
+    "digester",
+    "silo",
+    "hangar",
+    "service",
+    "elevator",
+    "column",
+  ] as string[],
   defaultHeightsByType: {
     house: 8,
     detached: 8,
@@ -92,6 +110,11 @@ const Config = {
     string,
     { roughness: number; metalness: number; colors: string[] }
   >,
+  minFacadeDimensions: {
+    minHeight: 15.0,
+    minFootprintArea: 20.0,
+    minFootprintDimension: 20.0,
+  },
   facadeTexture: {
     size: 512,
     brick: {
@@ -143,8 +166,8 @@ const Config = {
     window: {
       styles: {
         residential: {
-          moduleWidth: 2.4,
-          moduleHeight: 3,
+          moduleWidth: 8.4,
+          moduleHeight: 8,
           density: 0.7,
           frame: { color: "#3a332a", thickness: 0.1 },
           sill: { color: "#c9c3b6", heightFraction: 0.08 },
@@ -155,8 +178,8 @@ const Config = {
           },
         },
         commercial: {
-          moduleWidth: 3.0,
-          moduleHeight: 3.2,
+          moduleWidth: 8.0,
+          moduleHeight: 8.2,
           density: 0.95,
           frame: { color: "#20242a", thickness: 0.06 },
           sill: { color: "#2b2f35", heightFraction: 0.04 },
@@ -167,8 +190,8 @@ const Config = {
           },
         },
         industrial: {
-          moduleWidth: 3.6,
-          moduleHeight: 2.2,
+          moduleWidth: 8.6,
+          moduleHeight: 8.2,
           density: 0.35,
           frame: { color: "#2a2d2f", thickness: 0.12 },
           sill: { color: "#41454a", heightFraction: 0.05 },
@@ -179,8 +202,8 @@ const Config = {
           },
         },
         blank: {
-          moduleWidth: 3,
-          moduleHeight: 3,
+          moduleWidth: 8.0,
+          moduleHeight: 8.0,
           density: 0,
           frame: { color: "#000000", thickness: 0 },
           sill: { color: "#000000", heightFraction: 0 },
