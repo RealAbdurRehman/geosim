@@ -67,12 +67,9 @@ export default class BuildingMesh {
       const nz = normal.getZ(i);
 
       if (Math.abs(ny) > 0.6) {
-        // horizontal-ish face (roof/underside) — uses the cap material, no window texture
         uvs[i * 2] = px;
         uvs[i * 2 + 1] = pz;
       } else {
-        // vertical wall face: project directly onto the face's own tangent.
-        // Avoids nearest-edge search, so no more mismatched/compressed segments.
         const tangentX = -nz;
         const tangentZ = nx;
         uvs[i * 2] = px * tangentX + pz * tangentZ;
