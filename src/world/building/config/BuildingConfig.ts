@@ -112,8 +112,8 @@ const Config = {
   >,
   minFacadeDimensions: {
     minHeight: 10.0,
-    minFootprintArea: 5.0,
-    minFootprintDimension: 5.0,
+    minFootprintArea: 6.0,
+    minFootprintDimension: 7.0,
   },
   facadeTexture: {
     size: 512,
