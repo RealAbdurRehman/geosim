@@ -1,19 +1,92 @@
 import * as THREE from "three";
 
 import Config from "../config/BuildingConfig";
-import type { FacadeTextureType } from "../types";
+import type { FacadeTextureType, WindowStyleConfig } from "../types";
 
 interface MaterialPBRMaps {
   map: THREE.CanvasTexture;
   roughnessMap: THREE.CanvasTexture;
-  emissiveMap?: THREE.CanvasTexture;
   bumpMap?: THREE.CanvasTexture;
   tileScale: [number, number];
 }
 
 const textureCache = new Map<string, MaterialPBRMaps>();
 
-function createBrickTextures(baseColorHex: string): MaterialPBRMaps {
+function applyWindowPunch(
+  colorCanvas: HTMLCanvasElement,
+  roughCanvas: HTMLCanvasElement,
+  tileScale: [number, number],
+  style: WindowStyleConfig,
+): void {
+  if (style.density <= 0) return;
+
+  const size = colorCanvas.width;
+  const cols = Math.max(1, Math.round(tileScale[0] / style.moduleWidth));
+  const rows = Math.max(1, Math.round(tileScale[1] / style.moduleHeight));
+  const cellW = size / cols;
+  const cellH = size / rows;
+
+  const ctx = colorCanvas.getContext("2d")!;
+  const roughCtx = roughCanvas.getContext("2d")!;
+
+  const frameThicknessPx = Math.min(cellW, cellH) * style.frame.thickness;
+  const sillHeightPx = cellH * style.sill.heightFraction;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (Math.random() > style.density) continue;
+
+      const x = col * cellW;
+      const y = row * cellH;
+      const openW = cellW * 0.6;
+      const openH = cellH * 0.55;
+      const openX = x + (cellW - openW) / 2;
+      const openY = y + (cellH - openH) / 2;
+
+      ctx.fillStyle = style.frame.color;
+      ctx.fillRect(
+        openX - frameThicknessPx,
+        openY - frameThicknessPx,
+        openW + frameThicknessPx * 2,
+        openH + frameThicknessPx * 2,
+      );
+      roughCtx.fillStyle = "#808080";
+      roughCtx.fillRect(
+        openX - frameThicknessPx,
+        openY - frameThicknessPx,
+        openW + frameThicknessPx * 2,
+        openH + frameThicknessPx * 2,
+      );
+
+      ctx.fillStyle = style.sill.color;
+      ctx.fillRect(
+        openX - frameThicknessPx,
+        openY + openH,
+        openW + frameThicknessPx * 2,
+        sillHeightPx,
+      );
+
+      const tint = (Math.random() - 0.5) * style.pane.tintVariation;
+      const paneColor = new THREE.Color(style.pane.color).offsetHSL(0, 0, tint);
+      ctx.fillStyle = `#${paneColor.getHexString()}`;
+      ctx.fillRect(openX, openY, openW, openH);
+
+      const paneRoughness = THREE.MathUtils.lerp(
+        style.pane.roughness.min,
+        style.pane.roughness.max,
+        Math.random(),
+      );
+      const rVal = Math.round(paneRoughness * 255);
+      roughCtx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      roughCtx.fillRect(openX, openY, openW, openH);
+    }
+  }
+}
+
+function createBrickTextures(
+  baseColorHex: string,
+  windowStyle: WindowStyleConfig,
+): MaterialPBRMaps {
   const config = Config.facadeTexture.brick;
   const size = Config.facadeTexture.size;
 
@@ -68,10 +141,14 @@ function createBrickTextures(baseColorHex: string): MaterialPBRMaps {
     }
   }
 
+  applyWindowPunch(colorCanvas, roughCanvas, config.tileScale, windowStyle);
   return setupPBRMaps(colorCanvas, roughCanvas, config.tileScale);
 }
 
-function createConcreteTextures(baseColorHex: string): MaterialPBRMaps {
+function createConcreteTextures(
+  baseColorHex: string,
+  windowStyle: WindowStyleConfig,
+): MaterialPBRMaps {
   const config = Config.facadeTexture.concrete;
   const size = Config.facadeTexture.size;
 
@@ -113,6 +190,7 @@ function createConcreteTextures(baseColorHex: string): MaterialPBRMaps {
     ctx.stroke();
   }
 
+  applyWindowPunch(colorCanvas, roughCanvas, config.tileScale, windowStyle);
   return setupPBRMaps(colorCanvas, roughCanvas, config.tileScale);
 }
 
@@ -126,17 +204,16 @@ function createGlassTextures(baseColorHex: string): MaterialPBRMaps {
 
   const colorCanvas = document.createElement("canvas");
   const roughCanvas = document.createElement("canvas");
-  const emissiveCanvas = document.createElement("canvas");
-  colorCanvas.width = roughCanvas.width = emissiveCanvas.width = atlasWidth;
-  colorCanvas.height = roughCanvas.height = emissiveCanvas.height = atlasHeight;
+  colorCanvas.width = roughCanvas.width = atlasWidth;
+  colorCanvas.height = roughCanvas.height = atlasHeight;
 
   const ctx = colorCanvas.getContext("2d")!;
   const roughCtx = roughCanvas.getContext("2d")!;
-  const emissiveCtx = emissiveCanvas.getContext("2d")!;
 
   const base = new THREE.Color(baseColorHex);
   const frameThicknessPx = cellPx * config.frame.thickness;
   const spandrelHeightPx = cellPx * config.spandrel.heightFraction;
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const x = col * cellPx;
@@ -146,8 +223,6 @@ function createGlassTextures(baseColorHex: string): MaterialPBRMaps {
       ctx.fillRect(x, y, cellPx, cellPx);
       roughCtx.fillStyle = config.roughnessColor;
       roughCtx.fillRect(x, y, cellPx, cellPx);
-      emissiveCtx.fillStyle = "#000000";
-      emissiveCtx.fillRect(x, y, cellPx, cellPx);
 
       ctx.fillStyle = config.spandrel.color;
       ctx.fillRect(x, y + cellPx - spandrelHeightPx, cellPx, spandrelHeightPx);
@@ -187,23 +262,19 @@ function createGlassTextures(baseColorHex: string): MaterialPBRMaps {
       const rVal = Math.round(paneRoughness * 255);
       roughCtx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
       roughCtx.fillRect(paneX, paneY, paneW, paneH);
-
-      if (Math.random() < config.night.litProbability) {
-        emissiveCtx.fillStyle = config.night.litColor;
-        emissiveCtx.fillRect(paneX, paneY, paneW, paneH);
-      }
     }
   }
 
-  return setupPBRMaps(
-    colorCanvas,
-    roughCanvas,
-    [config.moduleWidth * cols, config.moduleHeight * rows],
-    emissiveCanvas,
-  );
+  return setupPBRMaps(colorCanvas, roughCanvas, [
+    config.moduleWidth * cols,
+    config.moduleHeight * rows,
+  ]);
 }
 
-function createPlasterTextures(baseColorHex: string): MaterialPBRMaps {
+function createPlasterTextures(
+  baseColorHex: string,
+  windowStyle: WindowStyleConfig,
+): MaterialPBRMaps {
   const config = Config.facadeTexture.plaster;
   const size = Config.facadeTexture.size;
 
@@ -244,6 +315,7 @@ function createPlasterTextures(baseColorHex: string): MaterialPBRMaps {
   ctx.putImageData(imgData, 0, 0);
   roughCtx.putImageData(roughData, 0, 0);
 
+  applyWindowPunch(colorCanvas, roughCanvas, config.tileScale, windowStyle);
   return setupPBRMaps(colorCanvas, roughCanvas, config.tileScale);
 }
 
@@ -251,7 +323,6 @@ function setupPBRMaps(
   colorCanvas: HTMLCanvasElement,
   roughCanvas: HTMLCanvasElement,
   tileScale: [number, number],
-  emissiveCanvas?: HTMLCanvasElement,
 ): MaterialPBRMaps {
   const map = new THREE.CanvasTexture(colorCanvas);
   map.wrapS = THREE.RepeatWrapping;
@@ -262,38 +333,37 @@ function setupPBRMaps(
   roughnessMap.wrapS = THREE.RepeatWrapping;
   roughnessMap.wrapT = THREE.RepeatWrapping;
 
-  let emissiveMap: THREE.CanvasTexture | undefined;
-  if (emissiveCanvas) {
-    emissiveMap = new THREE.CanvasTexture(emissiveCanvas);
-    emissiveMap.wrapS = THREE.RepeatWrapping;
-    emissiveMap.wrapT = THREE.RepeatWrapping;
-    emissiveMap.colorSpace = THREE.SRGBColorSpace;
-  }
-
-  return { map, roughnessMap, emissiveMap, tileScale };
+  return { map, roughnessMap, tileScale };
 }
 
 export default function getProceduralTextures(
   type: FacadeTextureType,
   baseColorHex: string,
+  windowStyleKey: string,
 ): MaterialPBRMaps {
-  const cacheKey = `${type}_${baseColorHex}`;
+  const cacheKey = `${type}_${baseColorHex}_${windowStyleKey}`;
   if (textureCache.has(cacheKey)) return textureCache.get(cacheKey)!;
+
+  const windowStyle =
+    Config.facadeTexture.window.styles[windowStyleKey] ??
+    Config.facadeTexture.window.styles[
+      Config.facadeTexture.window.defaultStyle
+    ];
 
   let maps: MaterialPBRMaps;
   switch (type) {
     case "brick":
-      maps = createBrickTextures(baseColorHex);
+      maps = createBrickTextures(baseColorHex, windowStyle);
       break;
     case "concrete":
-      maps = createConcreteTextures(baseColorHex);
+      maps = createConcreteTextures(baseColorHex, windowStyle);
       break;
     case "glass":
       maps = createGlassTextures(baseColorHex);
       break;
     case "plaster":
     default:
-      maps = createPlasterTextures(baseColorHex);
+      maps = createPlasterTextures(baseColorHex, windowStyle);
       break;
   }
 

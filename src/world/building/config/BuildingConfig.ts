@@ -1,4 +1,4 @@
-import type { BuildingFeatureCategory } from "../types";
+import type { BuildingFeatureCategory, WindowStyleConfig } from "../types";
 
 const Config = {
   metersPerLevel: 3,
@@ -133,16 +133,79 @@ const Config = {
         tintVariation: 0.12,
         reflectionStreakChance: 0.4,
       },
-      night: {
-        litColor: "#ffd98a",
-        litProbability: 0.1,
-      },
       roughnessColor: "#666666",
     },
     plaster: {
       colorNoise: 10,
       roughness: { base: 160, noise: 30 },
       tileScale: [8.0, 8.0] as [number, number],
+    },
+    window: {
+      styles: {
+        residential: {
+          moduleWidth: 2.4,
+          moduleHeight: 3,
+          density: 0.7,
+          frame: { color: "#3a332a", thickness: 0.1 },
+          sill: { color: "#c9c3b6", heightFraction: 0.08 },
+          pane: {
+            color: "#41576b",
+            roughness: { min: 0.1, max: 0.3 },
+            tintVariation: 0.1,
+          },
+        },
+        commercial: {
+          moduleWidth: 3.0,
+          moduleHeight: 3.2,
+          density: 0.95,
+          frame: { color: "#20242a", thickness: 0.06 },
+          sill: { color: "#2b2f35", heightFraction: 0.04 },
+          pane: {
+            color: "#4f8ca5",
+            roughness: { min: 0.05, max: 0.2 },
+            tintVariation: 0.08,
+          },
+        },
+        industrial: {
+          moduleWidth: 3.6,
+          moduleHeight: 2.2,
+          density: 0.35,
+          frame: { color: "#2a2d2f", thickness: 0.12 },
+          sill: { color: "#41454a", heightFraction: 0.05 },
+          pane: {
+            color: "#6b7a80",
+            roughness: { min: 0.2, max: 0.4 },
+            tintVariation: 0.05,
+          },
+        },
+        blank: {
+          moduleWidth: 3,
+          moduleHeight: 3,
+          density: 0,
+          frame: { color: "#000000", thickness: 0 },
+          sill: { color: "#000000", heightFraction: 0 },
+          pane: {
+            color: "#000000",
+            tintVariation: 0,
+            roughness: { min: 0, max: 0 },
+          },
+        },
+      } as Record<string, WindowStyleConfig>,
+      buildingTypeToStyle: {
+        house: "residential",
+        detached: "residential",
+        semidetached_house: "residential",
+        terrace: "residential",
+        residential: "residential",
+        apartments: "residential",
+        commercial: "commercial",
+        retail: "commercial",
+        office: "commercial",
+        skyscraper: "commercial",
+        industrial: "industrial",
+        warehouse: "industrial",
+      } as Record<string, string>,
+      defaultStyle: "residential" as string,
     },
   },
 };

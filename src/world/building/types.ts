@@ -122,3 +122,16 @@ export type FacadeTextureType =
   | "glass"
   | "plaster"
   | "metal";
+
+export interface WindowStyleConfig {
+  moduleWidth: number;
+  moduleHeight: number;
+  density: number;
+  frame: { color: string; thickness: number };
+  sill: { color: string; heightFraction: number };
+  pane: {
+    color: string;
+    roughness: { min: number; max: number };
+    tintVariation: number;
+  };
+}
