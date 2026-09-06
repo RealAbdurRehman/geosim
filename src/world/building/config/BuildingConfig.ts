@@ -111,9 +111,9 @@ const Config = {
     { roughness: number; metalness: number; colors: string[] }
   >,
   minFacadeDimensions: {
-    minHeight: 15.0,
-    minFootprintArea: 20.0,
-    minFootprintDimension: 20.0,
+    minHeight: 10.0,
+    minFootprintArea: 5.0,
+    minFootprintDimension: 5.0,
   },
   facadeTexture: {
     size: 512,
