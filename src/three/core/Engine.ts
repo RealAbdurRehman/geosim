@@ -13,6 +13,7 @@ export default class Engine {
   private readonly camera: Camera;
   private readonly renderer: Renderer;
   private readonly cameraControls: CameraControls;
+  private readonly lighting: Lighting;
   private readonly clouds: Clouds;
   private readonly timer: THREE.Timer;
   constructor() {
@@ -27,7 +28,7 @@ export default class Engine {
     this.timer = new THREE.Timer();
 
     new EnvironmentSky(this.scene.instance, this.renderer.getInstance());
-    new Lighting(this.scene.instance);
+    this.lighting = new Lighting(this.scene.instance);
 
     this.clouds = new Clouds(this.scene.instance, this.renderer.getInstance());
   }
@@ -66,5 +67,8 @@ export default class Engine {
   }
   public add(object: THREE.Object3D): void {
     this.scene.instance.add(object);
+  }
+  public refreshShadows(): void {
+    this.lighting.requestShadowUpdate();
   }
 }

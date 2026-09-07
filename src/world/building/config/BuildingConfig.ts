@@ -116,7 +116,7 @@ const Config = {
     minFootprintDimension: 7.0,
   },
   facadeTexture: {
-    size: 512,
+    size: 256,
     brick: {
       rows: 16,
       cols: 8,

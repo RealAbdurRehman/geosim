@@ -12,9 +12,9 @@ interface EnableLightShadowOptions {
 
 export default function enableLightShadow({
   light,
-  far = 1500,
+  far = 700,
   mapSize = { width: 2048, height: 2048 },
-  d = 600,
+  d = 550,
 }: EnableLightShadowOptions): void {
   light.castShadow = true;
 
@@ -29,4 +29,9 @@ export default function enableLightShadow({
   light.shadow.camera.right = d;
   light.shadow.camera.bottom = -d;
   light.shadow.camera.left = -d;
+
+  light.shadow.camera.updateProjectionMatrix();
+
+  light.shadow.autoUpdate = false;
+  light.shadow.needsUpdate = true;
 }

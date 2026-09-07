@@ -9,11 +9,32 @@ import type { LoadedBuilding } from "./types";
 interface BatchBuildingsOptions {
   castShadow?: boolean;
   receiveShadow?: boolean;
+  chunkSize?: number;
 }
 
 function materialKey(mat: THREE.MeshStandardMaterial): string {
   const mapId = mat.map ? mat.map.uuid : "nomap";
-  return `${mat.color.getHexString()}_${mat.roughness}_${mat.metalness}_${mapId}`;
+  const colorHex = mat.color.getHexString();
+  return `${colorHex}_${mat.roughness}_${mat.metalness}_${mapId}`;
+}
+
+function chunkKeyFor(
+  geometry: THREE.BufferGeometry,
+  chunkSize: number,
+): string {
+  const pos = geometry.attributes.position;
+  let sumX = 0;
+  let sumZ = 0;
+  for (let i = 0; i < pos.count; i++) {
+    sumX += pos.getX(i);
+    sumZ += pos.getZ(i);
+  }
+  const centroidX = sumX / pos.count;
+  const centroidZ = sumZ / pos.count;
+
+  const cx = Math.floor(centroidX / chunkSize);
+  const cz = Math.floor(centroidZ / chunkSize);
+  return `${cx}_${cz}`;
 }
 
 function extractGroupGeometries(
@@ -54,8 +75,14 @@ function extractGroupGeometries(
 
 export function batchBuildings(
   buildings: LoadedBuilding[],
-  options: BatchBuildingsOptions = { castShadow: true, receiveShadow: true },
+  options: BatchBuildingsOptions = {
+    castShadow: true,
+    receiveShadow: true,
+    chunkSize: 120,
+  },
 ): THREE.Mesh[] {
+  const chunkSize = options.chunkSize ?? 120;
+
   const groups = new Map<
     string,
     { material: THREE.Material; geometries: THREE.BufferGeometry[] }
@@ -70,10 +97,15 @@ export function batchBuildings(
     const parts = extractGroupGeometries(buildingMesh.instance.geometry);
     for (const part of parts) {
       const mat = materials[part.materialIndex];
-      const key = materialKey(mat);
+      const matKey = materialKey(mat);
+      const chunkKey = chunkKeyFor(part.geometry, chunkSize);
+      const key = `${matKey}_${chunkKey}`;
+
       if (!groups.has(key)) groups.set(key, { material: mat, geometries: [] });
       groups.get(key)!.geometries.push(part.geometry);
     }
+
+    buildingMesh.dispose();
   }
 
   const mergedMeshes: THREE.Mesh[] = [];
@@ -81,7 +113,14 @@ export function batchBuildings(
     if (geometries.length === 0) continue;
 
     const mergedGeometry = mergeGeometries(geometries, false);
+    mergedGeometry.computeBoundingSphere();
+    mergedGeometry.computeBoundingBox();
+
     const mesh = new THREE.Mesh(mergedGeometry, material);
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
+    mesh.frustumCulled = true;
+
     enableObjectShadow({
       object: mesh,
       shouldCast: options.castShadow,

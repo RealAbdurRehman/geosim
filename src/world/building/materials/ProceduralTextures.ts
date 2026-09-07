@@ -196,7 +196,7 @@ function createConcreteTextures(
 
 function createGlassTextures(baseColorHex: string): MaterialPBRMaps {
   const config = Config.facadeTexture.glass;
-  const cellPx = 128;
+  const cellPx = 64;
   const cols = config.atlasCols;
   const rows = config.atlasRows;
   const atlasWidth = cellPx * cols;

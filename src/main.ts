@@ -40,6 +40,7 @@ async function loadWorld(engine: Engine) {
     const batchedMeshes = batchBuildings(buildings);
     for (const mesh of batchedMeshes) engine.add(mesh);
 
+    engine.refreshShadows();
     loading.hidden = true;
   } catch (err) {
     console.error("Failed to load buildings:", err);

@@ -54,6 +54,17 @@ function weather(hex: string, id: number): string {
   return `#${color.getHexString()}`;
 }
 
+function quantizeColor(hex: string, steps = 16): string {
+  const color = new THREE.Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+
+  const quantize = (v: number) => Math.round(v * steps) / steps;
+  color.setHSL(quantize(hsl.h), quantize(hsl.s), quantize(hsl.l));
+
+  return `#${color.getHexString()}`;
+}
+
 export function resolveBuildingMaterial(
   id: number,
   buildingType: string | undefined,
@@ -70,7 +81,8 @@ export function resolveBuildingMaterial(
 
   const materialParams = Config.materialsByType[materialKey];
   const color =
-    explicitColor ?? weather(pickVariant(materialParams.colors, id), id);
+    explicitColor ??
+    quantizeColor(weather(pickVariant(materialParams.colors, id), id));
   const source: BuildingMaterialInfo["source"] =
     explicitColor || (facadeMaterial && Config.materialsByType[facadeMaterial])
       ? "osm"

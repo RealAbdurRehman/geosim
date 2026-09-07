@@ -41,4 +41,7 @@ export default class Lighting {
   public getSun(): THREE.DirectionalLight {
     return this.keyLight;
   }
+  public requestShadowUpdate(): void {
+    this.keyLight.shadow.needsUpdate = true;
+  }
 }

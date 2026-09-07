@@ -99,42 +99,6 @@ export default class BuildingMesh {
 
     return materials;
   }
-  // private getWallMaterial(building: Building): THREE.Material {
-  //   const matInfo = building.material;
-  //   const facadeType = (building.attributes.facade.material ??
-  //     building.attributes.general.type ??
-  //     "concrete") as FacadeTextureType;
-
-  //   const hasWindowData =
-  //     building.features?.some((f) => f.category === "window") ?? false;
-  //   const windowStyleKey = hasWindowData
-  //     ? "blank"
-  //     : resolveWindowStyleKey(building.attributes.general.type);
-
-  //   const key = `${facadeType}_${matInfo.color}_${matInfo.roughness}_${windowStyleKey}`;
-  //   if (wallMaterialCache.has(key)) return wallMaterialCache.get(key)!;
-
-  //   const pbr = getProceduralTextures(
-  //     facadeType,
-  //     matInfo.color,
-  //     windowStyleKey,
-  //   );
-  //   const repeatU = 1 / pbr.tileScale[0];
-  //   const repeatV = 1 / pbr.tileScale[1];
-  //   pbr.map.repeat.set(repeatU, repeatV);
-  //   pbr.roughnessMap.repeat.set(repeatU, repeatV);
-
-  //   const material = new THREE.MeshStandardMaterial({
-  //     color: matInfo.color,
-  //     map: pbr.map,
-  //     roughnessMap: pbr.roughnessMap,
-  //     roughness: matInfo.roughness,
-  //     metalness: matInfo.metalness,
-  //   });
-
-  //   wallMaterialCache.set(key, material);
-  //   return material;
-  // }
   private getWallMaterial(building: Building): THREE.Material {
     const matInfo = building.material;
     const facadeType = (building.attributes.facade.material ??
