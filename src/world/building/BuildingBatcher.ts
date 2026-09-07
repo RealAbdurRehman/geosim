@@ -12,29 +12,50 @@ interface BatchBuildingsOptions {
   chunkSize?: number;
 }
 
+export interface BuildingChunk {
+  chunkKey: string;
+  centroid: THREE.Vector2;
+  meshes: THREE.Mesh[];
+}
+
+interface ChunkBucket {
+  centroidSumX: number;
+  centroidSumZ: number;
+  centroidCount: number;
+  groups: Map<
+    string,
+    { material: THREE.Material; geometries: THREE.BufferGeometry[] }
+  >;
+}
+
 function materialKey(mat: THREE.MeshStandardMaterial): string {
   const mapId = mat.map ? mat.map.uuid : "nomap";
   const colorHex = mat.color.getHexString();
-  return `${colorHex}_${mat.roughness}_${mat.metalness}_${mapId}`;
+  const roughnessBucket = Math.round(mat.roughness * 20) / 20;
+  return `${colorHex}_${roughnessBucket}_${mat.metalness}_${mapId}`;
 }
 
 function chunkKeyFor(
-  geometry: THREE.BufferGeometry,
+  centroidX: number,
+  centroidZ: number,
   chunkSize: number,
 ): string {
-  const pos = geometry.attributes.position;
-  let sumX = 0;
-  let sumZ = 0;
-  for (let i = 0; i < pos.count; i++) {
-    sumX += pos.getX(i);
-    sumZ += pos.getZ(i);
-  }
-  const centroidX = sumX / pos.count;
-  const centroidZ = sumZ / pos.count;
-
   const cx = Math.floor(centroidX / chunkSize);
   const cz = Math.floor(centroidZ / chunkSize);
   return `${cx}_${cz}`;
+}
+
+function footprintCentroid(footprint: { x: number; z: number }[]): {
+  x: number;
+  z: number;
+} {
+  let sumX = 0;
+  let sumZ = 0;
+  for (const p of footprint) {
+    sumX += p.x;
+    sumZ += p.z;
+  }
+  return { x: sumX / footprint.length, z: sumZ / footprint.length };
 }
 
 function extractGroupGeometries(
@@ -73,6 +94,40 @@ function extractGroupGeometries(
   });
 }
 
+function setStaticUsage(geometry: THREE.BufferGeometry): void {
+  for (const key of ["position", "normal", "uv"] as const) {
+    const attribute = geometry.attributes[key];
+    if (attribute instanceof THREE.BufferAttribute)
+      attribute.setUsage(THREE.StaticDrawUsage);
+  }
+}
+
+function buildMesh(
+  material: THREE.Material,
+  geometries: THREE.BufferGeometry[],
+  castShadow: boolean,
+  receiveShadow: boolean,
+): THREE.Mesh | null {
+  if (geometries.length === 0) return null;
+
+  const mergedGeometry = mergeGeometries(geometries, false);
+  mergedGeometry.computeBoundingSphere();
+  mergedGeometry.computeBoundingBox();
+  setStaticUsage(mergedGeometry);
+
+  const mesh = new THREE.Mesh(mergedGeometry, material);
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
+  mesh.frustumCulled = true;
+
+  enableObjectShadow({
+    object: mesh,
+    shouldCast: castShadow,
+    shouldReceive: receiveShadow,
+  });
+  return mesh;
+}
+
 export function batchBuildings(
   buildings: LoadedBuilding[],
   options: BatchBuildingsOptions = {
@@ -80,55 +135,69 @@ export function batchBuildings(
     receiveShadow: true,
     chunkSize: 120,
   },
-): THREE.Mesh[] {
+): BuildingChunk[] {
   const chunkSize = options.chunkSize ?? 120;
+  const castShadow = options.castShadow ?? true;
+  const receiveShadow = options.receiveShadow ?? true;
+  const chunks = new Map<string, ChunkBucket>();
 
-  const groups = new Map<
-    string,
-    { material: THREE.Material; geometries: THREE.BufferGeometry[] }
-  >();
+  const getBucket = (
+    chunkKey: string,
+    centroid: { x: number; z: number },
+  ): ChunkBucket => {
+    let bucket = chunks.get(chunkKey);
+    if (!bucket) {
+      bucket = {
+        centroidSumX: 0,
+        centroidSumZ: 0,
+        centroidCount: 0,
+        groups: new Map(),
+      };
+      chunks.set(chunkKey, bucket);
+    }
+    bucket.centroidSumX += centroid.x;
+    bucket.centroidSumZ += centroid.z;
+    bucket.centroidCount += 1;
+    return bucket;
+  };
 
   for (const { building } of buildings) {
+    const centroid = footprintCentroid(building.footprint);
+    const chunkKey = chunkKeyFor(centroid.x, centroid.z, chunkSize);
+    const bucket = getBucket(chunkKey, centroid);
+
     const shape = new BuildingShape(building.footprint);
     const buildingMesh = new BuildingMesh(building, shape);
     const materials = buildingMesh.instance
       .material as THREE.MeshStandardMaterial[];
-
     const parts = extractGroupGeometries(buildingMesh.instance.geometry);
+
     for (const part of parts) {
       const mat = materials[part.materialIndex];
-      const matKey = materialKey(mat);
-      const chunkKey = chunkKeyFor(part.geometry, chunkSize);
-      const key = `${matKey}_${chunkKey}`;
-
-      if (!groups.has(key)) groups.set(key, { material: mat, geometries: [] });
-      groups.get(key)!.geometries.push(part.geometry);
+      const key = materialKey(mat);
+      if (!bucket.groups.has(key))
+        bucket.groups.set(key, { material: mat, geometries: [] });
+      bucket.groups.get(key)!.geometries.push(part.geometry);
     }
 
     buildingMesh.dispose();
   }
 
-  const mergedMeshes: THREE.Mesh[] = [];
-  for (const { material, geometries } of groups.values()) {
-    if (geometries.length === 0) continue;
+  const result: BuildingChunk[] = [];
+  for (const [chunkKey, bucket] of chunks.entries()) {
+    const centroid = new THREE.Vector2(
+      bucket.centroidSumX / bucket.centroidCount,
+      bucket.centroidSumZ / bucket.centroidCount,
+    );
 
-    const mergedGeometry = mergeGeometries(geometries, false);
-    mergedGeometry.computeBoundingSphere();
-    mergedGeometry.computeBoundingBox();
+    const meshes = [...bucket.groups.values()]
+      .map((g) =>
+        buildMesh(g.material, g.geometries, castShadow, receiveShadow),
+      )
+      .filter((m): m is THREE.Mesh => m !== null);
 
-    const mesh = new THREE.Mesh(mergedGeometry, material);
-    mesh.matrixAutoUpdate = false;
-    mesh.updateMatrix();
-    mesh.frustumCulled = true;
-
-    enableObjectShadow({
-      object: mesh,
-      shouldCast: options.castShadow,
-      shouldReceive: options.receiveShadow,
-    });
-
-    mergedMeshes.push(mesh);
+    result.push({ chunkKey, centroid, meshes });
   }
 
-  return mergedMeshes;
+  return result;
 }

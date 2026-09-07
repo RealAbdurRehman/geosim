@@ -1,4 +1,5 @@
 import Engine from "./three/core/Engine";
+
 import testBuildings from "./test-data/test-data.json";
 import loadBuildings from "./world/building/BuildingLoader";
 import { batchBuildings } from "./world/building/BuildingBatcher";
@@ -37,8 +38,10 @@ async function loadWorld(engine: Engine) {
     const buildings: LoadedBuilding[] = USE_CACHED_BUILDINGS
       ? (testBuildings as LoadedBuilding[])
       : await loadBuildings(testArea, origin);
-    const batchedMeshes = batchBuildings(buildings);
-    for (const mesh of batchedMeshes) engine.add(mesh);
+
+    const chunks = batchBuildings(buildings, { chunkSize: 120 });
+    for (const chunk of chunks)
+      for (const mesh of chunk.meshes) engine.add(mesh);
 
     engine.refreshShadows();
     loading.hidden = true;

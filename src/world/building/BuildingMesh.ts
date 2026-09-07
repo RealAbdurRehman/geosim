@@ -20,8 +20,8 @@ export default class BuildingMesh {
   public readonly instance: THREE.Mesh;
   constructor(building: Building, shape: BuildingShape) {
     const geometry = this.buildMetricGeometry(building, shape);
-    const wallMaterial = this.getWallMaterial(building);
-    const capMaterial = this.getCapMaterial(building);
+    const wallMaterial = BuildingMesh.getWallMaterial(building);
+    const capMaterial = BuildingMesh.getCapMaterial(building);
     const materials = this.assignGroupMaterials(
       geometry,
       wallMaterial,
@@ -99,7 +99,9 @@ export default class BuildingMesh {
 
     return materials;
   }
-  private getWallMaterial(building: Building): THREE.Material {
+  public static getWallMaterial(
+    building: Building,
+  ): THREE.MeshStandardMaterial {
     const matInfo = building.material;
     const facadeType = (building.attributes.facade.material ??
       building.attributes.general.type ??
@@ -139,7 +141,7 @@ export default class BuildingMesh {
     wallMaterialCache.set(key, material);
     return material;
   }
-  private getCapMaterial(building: Building): THREE.Material {
+  public static getCapMaterial(building: Building): THREE.MeshStandardMaterial {
     const matInfo = building.material;
     const key = `${matInfo.color}_${matInfo.roughness}_${matInfo.metalness}`;
     if (capMaterialCache.has(key)) return capMaterialCache.get(key)!;
