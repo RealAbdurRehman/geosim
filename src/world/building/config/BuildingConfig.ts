@@ -231,6 +231,88 @@ const Config = {
       defaultStyle: "residential" as string,
     },
   },
+  roof: {
+    parapet: {
+      height: 0.6,
+      thickness: 0.25,
+    },
+    domeRings: 4,
+    mansardTierRatio: 0.55,
+    mansardInsetRatio: 0.55,
+    defaultPitchHeight: 3,
+    minRoofHeight: 1.5,
+    maxRoofHeight: 12,
+    skyscraper: {
+      flatThreshold: 60,
+      parapetChance: 0.65,
+      rooftopStructureChance: 0.75,
+      maxStructures: 3,
+      minStructureHeight: 2.5,
+      maxStructureHeight: 8,
+    },
+    materialByRoofMaterial: {
+      tiles: {
+        color: "#8a4a35",
+        roughness: 0.8,
+        metalness: 0,
+      },
+      slate: {
+        color: "#3f4650",
+        roughness: 0.6,
+        metalness: 0.05,
+      },
+      metal: {
+        color: "#7d868b",
+        roughness: 0.35,
+        metalness: 0.5,
+      },
+      copper: {
+        color: "#5f8a78",
+        roughness: 0.5,
+        metalness: 0.2,
+      },
+      glass: {
+        color: "#5f8ca5",
+        roughness: 0.1,
+        metalness: 0.05,
+      },
+      concrete: {
+        color: "#a9a59d",
+        roughness: 0.85,
+        metalness: 0,
+      },
+      gravel: {
+        color: "#8f8a7e",
+        roughness: 0.95,
+        metalness: 0,
+      },
+      tar_paper: {
+        color: "#2c2c2c",
+        roughness: 0.9,
+        metalness: 0,
+      },
+    } as Record<
+      string,
+      {
+        color: string;
+        roughness: number;
+        metalness: number;
+      }
+    >,
+    defaultRoofMaterialByBuildingMaterial: {
+      brick: "tiles",
+      concrete: "concrete",
+      glass: "glass",
+      wood: "tiles",
+      stone: "slate",
+      plaster: "tiles",
+      metal: "metal",
+      stucco: "tiles",
+      cement_block: "gravel",
+    } as Record<string, string>,
+
+    defaultRoofMaterial: "gravel",
+  },
 };
 
 export default Config;

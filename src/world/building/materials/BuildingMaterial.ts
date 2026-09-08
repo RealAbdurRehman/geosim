@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-import Config from "./config/BuildingConfig";
-import type { BuildingMaterialInfo } from "./types";
+import Config from "../config/BuildingConfig";
+import type { BuildingMaterialInfo } from "../types";
 
 const NAMED_COLORS: Record<string, string> = {
   white: "#f2f2f0",

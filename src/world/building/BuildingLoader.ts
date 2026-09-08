@@ -9,7 +9,7 @@ import { parseBuildingAttributes } from "./BuildingAttributes";
 import { extractFeatures } from "./BuildingFeatures";
 import { attachFeaturesToBuildings } from "./FeatureMatcher";
 
-import { resolveBuildingMaterial } from "./BuildingMaterial";
+import { resolveBuildingMaterial } from "./materials/BuildingMaterial";
 
 import type { Building, LoadedBuilding } from "./types";
 import type {
