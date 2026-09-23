@@ -50,6 +50,67 @@ const BASE_MATERIALS: Record<string, string> = {
 export const DEFAULT_WALL_COLOR = "#dcd2c8";
 export const DEFAULT_ROOF_COLOR = "#7a8288";
 
+const OSM_COLOR_MAP: Record<string, string> = {
+  light_gray: "#c8c8c8",
+  light_grey: "#c8c8c8",
+  dark_gray: "#4a4a4a",
+  dark_grey: "#4a4a4a",
+  gray: "#808080",
+  grey: "#808080",
+  silver: "#cccccc",
+
+  brick_red: "#9c4a3c",
+  brick: "#9c4a3c",
+  tan: "#d2b48c",
+  sand: "#e0d2a6",
+  beige: "#e8d9b5",
+  cream: "#f4ecd6",
+  off_white: "#f5f2ec",
+  sandstone: "#c9b28c",
+
+  maroon: "#800000",
+  brown: "#8b5a2b",
+
+  sky_blue: "#87ceeb",
+  steel_blue: "#4a6d8c",
+  navy: "#001f3f",
+  teal: "#008080",
+
+  olive: "#808000",
+  concrete: "#b5b2ac",
+  white: "#ffffff",
+  black: "#000000",
+  red: "#c0392b",
+  blue: "#2c6fa8",
+  green: "#3d8b5a",
+  yellow: "#e5c100",
+  orange: "#e08b3a",
+  pink: "#e5b6c2",
+  purple: "#7a4e8c",
+};
+
+export function normalizeOsmColor(
+  raw: string | undefined | null,
+): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+
+  if (/^#[0-9a-f]{3,8}$/i.test(trimmed)) return trimmed;
+
+  if (/^(rgb|hsl|hwb|lab|lch|oklab|oklch|color)\(/i.test(trimmed))
+    return trimmed;
+
+  const key = trimmed.toLowerCase().replace(/[\s-]+/g, "_");
+  const mapped = OSM_COLOR_MAP[key];
+  if (mapped) return mapped;
+
+  if (typeof CSS !== "undefined" && CSS.supports?.("color", trimmed))
+    return trimmed;
+
+  return undefined;
+}
+
 const TYPE_PALETTES: Record<string, string[]> = {
   office: ["#9cb8c5", "#dcd5cc", "#8ea4b0", "#363a40", "#cfc8be"],
   commercial: ["#dcd2c8", "#cfc5ba", "#98b0be", "#d8d0c5"],
@@ -88,8 +149,10 @@ export function resolveWallColor(
   tags?: Record<string, string>,
   type?: string,
 ): string {
-  if (tags?.["building:colour"]) return tags["building:colour"];
-  if (tags?.["colour"]) return tags["colour"];
+  const osmColour =
+    normalizeOsmColor(tags?.["building:colour"]) ??
+    normalizeOsmColor(tags?.["colour"]);
+  if (osmColour) return osmColour;
 
   const mat = tags?.["building:material"] ?? tags?.["material"];
   const matColor = resolveMaterialColor(mat);
@@ -104,7 +167,9 @@ export function resolveRoofColor(
   id: number,
   tags?: Record<string, string>,
 ): string {
-  if (tags?.["roof:colour"]) return tags["roof:colour"];
+  const osmRoof = normalizeOsmColor(tags?.["roof:colour"]);
+  if (osmRoof) return osmRoof;
+
   const roofMat = tags?.["roof:material"];
   const matColor = resolveMaterialColor(roofMat);
   if (matColor) return matColor;
@@ -113,4 +178,8 @@ export function resolveRoofColor(
   if (h > 0.7) return "#585e64";
   if (h > 0.4) return "#828990";
   return "#6a7178";
+}
+
+export function safeColor(raw: string | undefined, fallback: string): string {
+  return normalizeOsmColor(raw) ?? fallback;
 }

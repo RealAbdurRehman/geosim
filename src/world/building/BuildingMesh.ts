@@ -4,7 +4,13 @@ import BuildingShape from "./BuildingShape";
 import enableObjectShadow from "../../utils/enableObjectShadow";
 
 import { createOsmBuildingsMaterial } from "./materials/BuildingMaterial";
-import { resolveWallColor, resolveRoofColor } from "./materials/BuildingColors";
+import {
+  resolveWallColor,
+  resolveRoofColor,
+  safeColor,
+  DEFAULT_WALL_COLOR,
+  DEFAULT_ROOF_COLOR,
+} from "./materials/BuildingColors";
 
 import type { Building } from "./types";
 
@@ -125,36 +131,42 @@ export default class BuildingMesh {
     building: Building,
     shape: BuildingShape,
   ): THREE.BufferGeometry {
-    const depth = Math.max(building.height - building.minHeight, 0.1);
-    const geometry = new THREE.ExtrudeGeometry(shape.instance, {
-      depth,
-      bevelEnabled: false,
-    });
-    geometry.rotateX(-Math.PI / 2);
+    const totalH = Math.max(building.height - building.minHeight, 0.1);
+
+    const wallColor = safeColor(
+      building.color ||
+        resolveWallColor(building.id, building.tags, building.type),
+      DEFAULT_WALL_COLOR,
+    );
+    const roofColor = safeColor(
+      resolveRoofColor(building.id, building.tags),
+      DEFAULT_ROOF_COLOR,
+    );
+
+    let wallGeom: THREE.BufferGeometry = new THREE.ExtrudeGeometry(
+      shape.instance,
+      { depth: totalH, bevelEnabled: false },
+    );
+    wallGeom.rotateX(-Math.PI / 2);
+    wallGeom.clearGroups();
+
+    if (wallGeom.attributes.uv) wallGeom.deleteAttribute("uv");
+    if (wallGeom.index) wallGeom = wallGeom.toNonIndexed();
+    this.applyVertexColors(wallGeom, wallColor, roofColor);
 
     const [dx, dy, dz] = nudgeFor(building.id);
-    geometry.translate(dx, building.minHeight + dy, dz);
+    wallGeom.translate(dx, building.minHeight + dy, dz);
 
-    geometry.clearGroups();
-    geometry.deleteAttribute("uv");
-
-    const wallColor =
-      building.color ||
-      resolveWallColor(building.id, building.tags, building.type);
-    const roofColor = resolveRoofColor(building.id, building.tags);
-
-    this.applyVertexColors(geometry, wallColor, roofColor);
-    this.applyFloatAttribute(geometry, "aHeight", building.height);
-
+    this.applyFloatAttribute(wallGeom, "aHeight", building.height);
     const sharedId = building.parentId ?? building.id;
     this.applyFloatAttribute(
-      geometry,
+      wallGeom,
       "aFacadeStyle",
       getFacadeStyle({ ...building, id: sharedId }),
     );
-    this.applyPatternOffset(geometry, sharedId);
+    this.applyPatternOffset(wallGeom, sharedId);
 
-    return geometry;
+    return wallGeom;
   }
   private applyVertexColors(
     geometry: THREE.BufferGeometry,

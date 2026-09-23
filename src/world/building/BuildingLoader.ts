@@ -154,15 +154,32 @@ export default async function loadBuildings(
     }
   }
 
-  const parts = parsed.filter((p) => p.isPart);
-  const shells = parsed.filter((p) => !p.isPart);
+  const seen = new Set<string>();
+  const deduped: ParsedElement[] = [];
+  for (const entry of parsed) {
+    const key =
+      (entry.isPart ? "P:" : "S:") +
+      entry.building.footprint
+        .map((p) => `${p.x.toFixed(2)},${p.z.toFixed(2)}`)
+        .join("|");
+
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    deduped.push(entry);
+  }
+
+  const parts = deduped.filter((p) => p.isPart);
+  const shells = deduped.filter((p) => !p.isPart);
 
   const shellsWithParts = new Set<number>();
   for (const shell of shells) {
     for (const part of parts) {
       const centroid = footprintCentroid(part.building.footprint);
-      if (pointInPolygon(centroid, shell.building.footprint))
+      if (pointInPolygon(centroid, shell.building.footprint)) {
         part.building.parentId = shell.building.id;
+        shellsWithParts.add(shell.building.id);
+      }
     }
   }
 

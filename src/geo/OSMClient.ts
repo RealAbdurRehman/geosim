@@ -9,15 +9,9 @@ export async function fetchBuildings(
     (
       way["building"](${bbox});
       way["building:part"](${bbox});
-      way["window"](${bbox});
-      way["amenity"="parking"](${bbox});
-
       relation["building"]["type"="multipolygon"](${bbox});
-      relation["amenity"="parking"]["type"="multipolygon"](${bbox});
-
-      node["window"](${bbox});
-      node["entrance"](${bbox});
     );
+    
     out geom;
   `;
 

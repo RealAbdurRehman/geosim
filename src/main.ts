@@ -9,10 +9,10 @@ import { type BoundingBox, type GeoPoint } from "./geo/types";
 import type { LoadedBuilding } from "./world/building/types";
 
 const testArea: BoundingBox = {
-  north: 40.7625,
-  south: 40.7545,
-  east: -73.9795,
-  west: -73.9915,
+  north: 40.7145,
+  south: 40.7025,
+  east: -74.001,
+  west: -74.017,
 };
 
 const origin: GeoPoint = {
@@ -20,7 +20,7 @@ const origin: GeoPoint = {
   lon: (testArea.east + testArea.west) / 2,
 };
 
-const USE_CACHED_BUILDINGS = true;
+const USE_CACHED_BUILDINGS = false;
 
 const latitude = document.getElementById("latitude")!;
 const longitude = document.getElementById("longitude")!;
