@@ -2,39 +2,126 @@ import * as THREE from "three";
 
 import BuildingShape from "./BuildingShape";
 import enableObjectShadow from "../../utils/enableObjectShadow";
-import getProceduralTextures from "./materials/ProceduralTextures";
-import resolveWindowStyleKey from "./helpers/ResolveWindowStyleKey";
-import shouldSkipFacadeWindows from "./config/ShouldSkipFacadeWindows";
 
-import type { Building, FacadeTextureType } from "./types";
+import { createOsmBuildingsMaterial } from "./materials/BuildingMaterial";
+import { resolveWallColor, resolveRoofColor } from "./materials/BuildingColors";
 
-function verticalNudgeFor(id: number): number {
-  const hash = Math.abs(Math.sin(id) * 10000);
-  return (hash % 1) * 0.2;
+import type { Building } from "./types";
+
+const NO_WINDOWS_TYPES = new Set([
+  "garage",
+  "garages",
+  "carport",
+  "shed",
+  "greenhouse",
+  "hut",
+  "cabin",
+  "roof",
+  "canopy",
+  "ruins",
+  "silo",
+  "hangar",
+  "service",
+  "elevator",
+  "column",
+  "storage_tank",
+  "tower",
+  "antenna",
+  "chimney",
+  "mast",
+  "obelisk",
+  "monument",
+  "memorial",
+  "water_tower",
+  "cooling_tower",
+]);
+
+const NO_WINDOWS_MAN_MADE = new Set([
+  "tower",
+  "mast",
+  "antenna",
+  "chimney",
+  "water_tower",
+  "cooling_tower",
+  "windmill",
+  "crane",
+  "storage_tank",
+  "silo",
+  "obelisk",
+  "bridge",
+  "lighthouse",
+]);
+
+function footprintArea(fp: { x: number; z: number }[]): number {
+  let area = 0;
+  for (let i = 0, j = fp.length - 1; i < fp.length; j = i++)
+    area += (fp[j].x + fp[i].x) * (fp[j].z - fp[i].z);
+
+  return Math.abs(area / 2);
 }
 
-const wallMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
-const capMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
+export function getFacadeStyle(building: Building): number {
+  const height = building.height - building.minHeight;
+  const tags = building.tags ?? {};
+
+  for (const key of ["building", "building:part", "man_made", "tower:type"]) {
+    const v = tags[key]?.toLowerCase();
+    if (v && NO_WINDOWS_TYPES.has(v)) return 0;
+  }
+
+  const manMade = tags["man_made"]?.toLowerCase();
+  if (manMade && NO_WINDOWS_MAN_MADE.has(manMade)) return 0;
+  if (height < 4) return 0;
+
+  const area = footprintArea(building.footprint);
+  if (area < 6) return 0;
+
+  const sqrtArea = Math.sqrt(area);
+  if (height / sqrtArea > 10) return 0;
+
+  const hash = Math.abs(Math.sin(building.id * 12.9898) * 43758.5453) % 1;
+  if (height >= 40) return hash < 0.5 ? 2 : 3;
+
+  return hash < 0.7 ? 1 : 2;
+}
+
+function nudgeFor(id: number): [number, number, number] {
+  const h1 = Math.abs(Math.sin(id * 12.9898) * 43758.5453) % 1;
+  const h2 = Math.abs(Math.sin(id * 78.233) * 43758.5453) % 1;
+  const h3 = Math.abs(Math.sin(id * 39.425) * 43758.5453) % 1;
+  return [(h1 - 0.5) * 0.3, (h2 - 0.5) * 0.3, (h3 - 0.5) * 0.3];
+}
 
 export default class BuildingMesh {
   public readonly instance: THREE.Mesh;
   constructor(building: Building, shape: BuildingShape) {
-    const geometry = this.buildMetricGeometry(building, shape);
-    const wallMaterial = BuildingMesh.getWallMaterial(building);
-    const capMaterial = BuildingMesh.getCapMaterial(building);
-    const materials = this.assignGroupMaterials(
-      geometry,
-      wallMaterial,
-      capMaterial,
-    );
+    const geometry = this.buildGeometry(building, shape);
+    const material = createOsmBuildingsMaterial();
 
-    this.instance = new THREE.Mesh(geometry, materials);
-    this.init();
-  }
-  private init(): void {
+    this.instance = new THREE.Mesh(geometry, material);
     enableObjectShadow({ object: this.instance });
   }
-  private buildMetricGeometry(
+  private applyPatternOffset(
+    geometry: THREE.BufferGeometry,
+    buildingId: number,
+  ): void {
+    const count = geometry.attributes.position.count;
+    const arr = new Float32Array(count * 2);
+
+    const hash1 = Math.abs(Math.sin(buildingId * 12.9898) * 43758.5453) % 1;
+    const hash2 = Math.abs(Math.sin(buildingId * 78.233) * 43758.5453) % 1;
+
+    const offsetU = hash1 * 3.5;
+    const offsetV = hash2 * 3.0;
+
+    for (let i = 0; i < count; i++) {
+      arr[i * 2] = offsetU;
+      arr[i * 2 + 1] = offsetV;
+    }
+
+    geometry.setAttribute("aPatternOffset", new THREE.BufferAttribute(arr, 2));
+  }
+  private buildGeometry(
     building: Building,
     shape: BuildingShape,
   ): THREE.BufferGeometry {
@@ -43,119 +130,65 @@ export default class BuildingMesh {
       depth,
       bevelEnabled: false,
     });
-
     geometry.rotateX(-Math.PI / 2);
-    geometry.translate(
-      0,
-      building.minHeight + verticalNudgeFor(building.id),
-      0,
-    );
 
-    this.applyMetricUVs(geometry);
+    const [dx, dy, dz] = nudgeFor(building.id);
+    geometry.translate(dx, building.minHeight + dy, dz);
+
+    geometry.clearGroups();
+    geometry.deleteAttribute("uv");
+
+    const wallColor =
+      building.color ||
+      resolveWallColor(building.id, building.tags, building.type);
+    const roofColor = resolveRoofColor(building.id, building.tags);
+
+    this.applyVertexColors(geometry, wallColor, roofColor);
+    this.applyFloatAttribute(geometry, "aHeight", building.height);
+
+    const sharedId = building.parentId ?? building.id;
+    this.applyFloatAttribute(
+      geometry,
+      "aFacadeStyle",
+      getFacadeStyle({ ...building, id: sharedId }),
+    );
+    this.applyPatternOffset(geometry, sharedId);
+
     return geometry;
   }
-  private applyMetricUVs(geometry: THREE.BufferGeometry): void {
-    const pos = geometry.attributes.position;
-    const normal = geometry.attributes.normal;
-    const uvs = new Float32Array(pos.count * 2);
-
-    for (let i = 0; i < pos.count; i++) {
-      const px = pos.getX(i);
-      const py = pos.getY(i);
-      const pz = pos.getZ(i);
-      const nx = normal.getX(i);
-      const ny = normal.getY(i);
-      const nz = normal.getZ(i);
-
-      if (Math.abs(ny) > 0.6) {
-        uvs[i * 2] = px;
-        uvs[i * 2 + 1] = pz;
-      } else {
-        const tangentX = -nz;
-        const tangentZ = nx;
-        uvs[i * 2] = px * tangentX + pz * tangentZ;
-        uvs[i * 2 + 1] = py;
-      }
-    }
-
-    geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
-  }
-  private assignGroupMaterials(
+  private applyVertexColors(
     geometry: THREE.BufferGeometry,
-    wallMaterial: THREE.Material,
-    capMaterial: THREE.Material,
-  ): THREE.Material[] {
+    wallColorHex: string,
+    roofColorHex: string,
+  ): void {
     const normal = geometry.attributes.normal;
-    const index = geometry.index;
-    const materials: THREE.Material[] = [];
+    const count = geometry.attributes.position.count;
+    const colors = new Float32Array(count * 3);
 
-    for (const group of geometry.groups) {
-      const materialIndex = group.materialIndex ?? 0;
-      const vertexIndex = index ? index.getX(group.start) : group.start;
-      const ny = normal.getY(vertexIndex);
-      materials[materialIndex] =
-        Math.abs(ny) > 0.6 ? capMaterial : wallMaterial;
+    const wall = new THREE.Color(wallColorHex);
+    const roof = new THREE.Color(roofColorHex);
+
+    for (let i = 0; i < count; i++) {
+      const ny = normal.getY(i);
+
+      const isRoof = ny > 0.6;
+      const c = isRoof ? roof : wall;
+
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
     }
 
-    return materials;
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   }
-  public static getWallMaterial(
-    building: Building,
-  ): THREE.MeshStandardMaterial {
-    const matInfo = building.material;
-    const facadeType = (building.attributes.facade.material ??
-      building.attributes.general.type ??
-      "concrete") as FacadeTextureType;
-
-    const skipFacadeWindows = shouldSkipFacadeWindows(building);
-    const hasWindowData =
-      building.features?.some((f) => f.category === "window") ?? false;
-    const windowStyleKey = hasWindowData
-      ? "blank"
-      : resolveWindowStyleKey(building.attributes.general.type);
-
-    const key = skipFacadeWindows
-      ? `plain_${matInfo.color}`
-      : `${facadeType}_${matInfo.color}_${matInfo.roughness}_${windowStyleKey}`;
-    if (wallMaterialCache.has(key)) return wallMaterialCache.get(key)!;
-
-    const pbr = getProceduralTextures(
-      facadeType,
-      matInfo.color,
-      windowStyleKey,
-      skipFacadeWindows,
-    );
-    const repeatU = 1 / pbr.tileScale[0];
-    const repeatV = 1 / pbr.tileScale[1];
-    pbr.map.repeat.set(repeatU, repeatV);
-    pbr.roughnessMap.repeat.set(repeatU, repeatV);
-
-    const material = new THREE.MeshStandardMaterial({
-      color: matInfo.color,
-      map: pbr.map,
-      roughnessMap: pbr.roughnessMap,
-      roughness: matInfo.roughness,
-      metalness: matInfo.metalness,
-    });
-
-    wallMaterialCache.set(key, material);
-    return material;
-  }
-  public static getCapMaterial(building: Building): THREE.MeshStandardMaterial {
-    const matInfo = building.material;
-    const key = `${matInfo.color}_${matInfo.roughness}_${matInfo.metalness}`;
-    if (capMaterialCache.has(key)) return capMaterialCache.get(key)!;
-
-    const material = new THREE.MeshStandardMaterial({
-      color: matInfo.color,
-      roughness: Math.min(matInfo.roughness + 0.1, 1),
-      metalness: matInfo.metalness,
-    });
-
-    capMaterialCache.set(key, material);
-    return material;
-  }
-  public dispose(): void {
-    this.instance.geometry.dispose();
+  private applyFloatAttribute(
+    geometry: THREE.BufferGeometry,
+    name: string,
+    value: number,
+  ): void {
+    const count = geometry.attributes.position.count;
+    const arr = new Float32Array(count);
+    arr.fill(value);
+    geometry.setAttribute(name, new THREE.BufferAttribute(arr, 1));
   }
 }

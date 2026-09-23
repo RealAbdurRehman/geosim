@@ -3,25 +3,25 @@ import * as THREE from "three";
 const Config = {
   camera: {
     fov: 60,
-    near: 1.0,
+    near: 50.0,
     far: 10000,
     start: new THREE.Vector3(0, 400, 1000),
     controls: { enablePan: true, enableDamping: true, maxDistance: 7000 },
   },
   lighting: {
-    ambientLight: {
-      color: 0xffffff,
-      intensity: 0.1,
-    },
     hemisphereLight: {
       skyColor: 0x87ceeb,
       groundColor: 0x444444,
       intensity: 0.2,
     },
     sun: {
-      position: new THREE.Vector3(4, 25, 5),
-      color: 0xffffff,
-      intensity: 1.5,
+      position: new THREE.Vector3(600, 900, 500),
+      color: 0xfff6ea,
+      intensity: 1.8,
+    },
+    ambientLight: {
+      color: 0xe6e0d8,
+      intensity: 0.6,
     },
   },
   environment: {

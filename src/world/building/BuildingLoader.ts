@@ -1,15 +1,9 @@
 import { fetchBuildings } from "../../geo/OSMClient";
 import { fetchWikidataHeights } from "../../geo/WikidataClient";
 
-import { insetFootprint } from "./helpers/InsetFootprint";
-
 import { geoPointToLocal } from "../../geo/Projection";
 import { parseBuildingAttributes } from "./BuildingAttributes";
-
-import { extractFeatures } from "./BuildingFeatures";
-import { attachFeaturesToBuildings } from "./FeatureMatcher";
-
-import { resolveBuildingMaterial } from "./materials/BuildingMaterial";
+import { resolveWallColor } from "./materials/BuildingColors";
 
 import type { Building, LoadedBuilding } from "./types";
 import type {
@@ -113,11 +107,11 @@ function pointInPolygon(point: LocalPoint, polygon: LocalPoint[]): boolean {
 
     if (intersects) inside = !inside;
   }
+
   return inside;
 }
 
 interface ParsedElement {
-  osm: OSMElement;
   building: Building;
   isPart: boolean;
 }
@@ -134,32 +128,27 @@ export default async function loadBuildings(
       if (!element.geometry) continue;
       if (!isSurfaceBuilding(element.tags)) continue;
 
-      const rawFootprint: LocalPoint[] = element.geometry.map((point) =>
+      const footprint: LocalPoint[] = element.geometry.map((point) =>
         geoPointToLocal(point, origin),
       );
 
       const isPart = isBuildingPart(element.tags);
-      const footprint = insetFootprint(rawFootprint, isPart ? -0.8 : 0);
 
-      const attributes = parseBuildingAttributes(element.tags);
-      const material = resolveBuildingMaterial(
-        element.id,
-        attributes.general.type,
-        attributes.facade.material,
-        attributes.facade.colour,
-      );
+      const attrs = parseBuildingAttributes(element.tags);
+      const color = resolveWallColor(element.id, element.tags, attrs.type);
 
       parsed.push({
-        osm: element,
-        isPart: isBuildingPart(element.tags),
+        isPart,
         building: {
           id: element.id,
-          height: attributes.dimensions.totalHeight,
-          minHeight: attributes.dimensions.minHeight,
+          height: attrs.height,
+          minHeight: attrs.minHeight,
           footprint,
-          attributes,
           tags: element.tags,
-          material,
+          type: attrs.type,
+          wikidata: attrs.wikidata,
+          color,
+          isPart,
         },
       });
     }
@@ -172,10 +161,8 @@ export default async function loadBuildings(
   for (const shell of shells) {
     for (const part of parts) {
       const centroid = footprintCentroid(part.building.footprint);
-      if (pointInPolygon(centroid, shell.building.footprint)) {
-        shellsWithParts.add(shell.building.id);
-        break;
-      }
+      if (pointInPolygon(centroid, shell.building.footprint))
+        part.building.parentId = shell.building.id;
     }
   }
 
@@ -189,11 +176,8 @@ export default async function loadBuildings(
     const hasRealDimensionData = !!(
       building.tags?.["height"] || building.tags?.["building:levels"]
     );
-    if (!hasRealDimensionData && building.attributes.metadata.wikidata)
-      needsWikidataHeight.push({
-        building,
-        qid: building.attributes.metadata.wikidata,
-      });
+    if (!hasRealDimensionData && building.wikidata)
+      needsWikidataHeight.push({ building, qid: building.wikidata });
   }
 
   const qids = [...new Set(needsWikidataHeight.map((n) => n.qid))];
@@ -203,14 +187,5 @@ export default async function loadBuildings(
     if (height) building.height = height;
   }
 
-  const features = extractFeatures(data.elements, origin);
-  const featuresByBuilding = attachFeaturesToBuildings(
-    renderable.map((r) => r.building),
-    features,
-  );
-
-  for (const { building } of renderable)
-    building.features = featuresByBuilding.get(building.id) ?? [];
-
-  return renderable.map(({ osm, building }) => ({ osm, building }));
+  return renderable.map(({ building }) => ({ building }));
 }

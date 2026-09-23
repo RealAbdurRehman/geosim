@@ -1,7 +1,6 @@
 import * as THREE from "three";
 
 import Config from "../config/ThreeConfig";
-import enableLightShadow from "../../utils/enableLightShadow";
 
 export default class Lighting {
   private readonly ambientLight: THREE.AmbientLight;
@@ -32,16 +31,11 @@ export default class Lighting {
   private createKeyLight(): THREE.DirectionalLight {
     const config = Config.lighting.sun;
     const keyLight = new THREE.DirectionalLight(config.color, config.intensity);
-
     keyLight.position.copy(config.position);
-    enableLightShadow({ light: keyLight });
 
     return keyLight;
   }
   public getSun(): THREE.DirectionalLight {
     return this.keyLight;
-  }
-  public requestShadowUpdate(): void {
-    this.keyLight.shadow.needsUpdate = true;
   }
 }

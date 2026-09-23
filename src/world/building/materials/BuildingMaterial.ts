@@ -1,97 +1,134 @@
 import * as THREE from "three";
 
-import Config from "../config/BuildingConfig";
-import type { BuildingMaterialInfo } from "../types";
+const vertexShader = /* glsl */ `
+  attribute float aHeight;
+  attribute float aFacadeStyle;
 
-const NAMED_COLORS: Record<string, string> = {
-  white: "#f2f2f0",
-  black: "#4d4d4d",
-  grey: "#9a9a9a",
-  gray: "#9a9a9a",
-  red: "#a94442",
-  brown: "#7a5738",
-  beige: "#d8cdb8",
-  tan: "#d2b48c",
-  yellow: "#d9c26a",
-  green: "#6b8e63",
-  blue: "#5a7a9a",
-  cream: "#e5ddc9",
-};
+  uniform vec3 uSunDirection;
+  uniform vec3 uSunColor;
+  uniform vec3 uAmbientColor;
+  uniform float uGradientStrength;
 
-function isHexColor(value: string): boolean {
-  return /^#[0-9a-f]{3,6}$/i.test(value);
+  varying vec3 vColor;
+  varying vec3 vWorldNormal;
+  varying vec3 vWorldPos;
+  varying float vHeight;
+  varying float vFacadeStyle;
+
+  void main() {
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
+
+    float diffuse = max(dot(worldNormal, uSunDirection), 0.0) / 1.4;
+    vec3 litColor = color * (uAmbientColor + uSunColor * diffuse);
+
+    float startOffset = 2.5;
+    float normY = clamp(
+      (position.y - startOffset) / max(aHeight - startOffset, 1.0),
+      0.0,
+      1.0
+    );
+
+    float falloff = pow(1.0 - normY, 2.0);
+    float verticalShading = uGradientStrength * falloff;
+
+    vColor = max(litColor - vec3(verticalShading), vec3(0.05));
+    vWorldNormal = worldNormal;
+    vWorldPos = worldPos.xyz;
+    vHeight = aHeight;
+    vFacadeStyle = aFacadeStyle;
+
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
+  }
+`;
+
+const fragmentShader = /* glsl */ `
+  varying vec3 vColor;
+  varying vec3 vWorldNormal;
+  varying vec3 vWorldPos;
+  varying float vHeight;
+  varying float vFacadeStyle;
+
+  void main() {
+    vec3 baseColor = vColor;
+    bool isWall = abs(vWorldNormal.y) < 0.5;
+
+    if (isWall && vFacadeStyle > 0.5 && vWorldPos.y > 2.0) {
+      float u = (abs(vWorldNormal.x) > abs(vWorldNormal.z))
+        ? vWorldPos.z
+        : vWorldPos.x;
+      float v = vWorldPos.y;
+
+      float px = max(fwidth(u), fwidth(v));
+      float fade = smoothstep(0.04, 0.12, px);
+
+      if (fade > 0.01 && v < vHeight - 1.0) {
+        if (vFacadeStyle < 1.5) {
+          vec2 cell = vec2(mod(u, 3.5), mod(v - 2.0, 3.0));
+          if (cell.x < 2.0 && cell.y < 1.6) {
+            baseColor *= 0.75;
+          }
+        } else if (vFacadeStyle < 2.5) {
+          float stripe = mod(u, 2.2);
+          if (stripe < 1.3) {
+            baseColor *= 0.75;
+          }
+        } else {
+          float band = mod(v - 2.0, 3.5);
+          if (band < 1.5) {
+            baseColor *= 0.75;
+          }
+        }
+
+        baseColor = mix(vColor, baseColor, fade);
+      }
+    }
+
+    gl_FragColor = vec4(baseColor, 1.0);
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
+
+export interface OsmBuildingsMaterialOptions {
+  sunDirection?: THREE.Vector3;
+  sunColor?: THREE.Color;
+  ambientColor?: THREE.Color;
+  gradientStrength?: number;
+  polygonOffset?: { factor: number; units: number };
 }
 
-function resolveExplicitColor(raw?: string): string | null {
-  if (!raw) return null;
+export function createOsmBuildingsMaterial(
+  options: OsmBuildingsMaterialOptions = {},
+): THREE.ShaderMaterial {
+  const sunDirection = (
+    options.sunDirection ?? new THREE.Vector3(0.55, 0.75, 0.4)
+  ).normalize();
+  const sunColor = options.sunColor ?? new THREE.Color(1.0, 0.96, 0.9);
 
-  const value = raw.trim().toLowerCase();
-  if (isHexColor(value)) return value;
+  const ambientColor =
+    options.ambientColor ?? new THREE.Color(0.55, 0.54, 0.52);
+  const gradientStrength = options.gradientStrength ?? 0.48;
 
-  return NAMED_COLORS[value] ?? null;
-}
+  const uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib.lights,
+    {
+      uSunDirection: { value: sunDirection },
+      uSunColor: { value: sunColor },
+      uAmbientColor: { value: ambientColor },
+      uGradientStrength: { value: gradientStrength },
+    },
+  ]);
 
-function hashToUnit(id: number): number {
-  const x = Math.sin(id) * 10000;
-  return x - Math.floor(x);
-}
-
-function pickVariant(colors: string[], id: number): string {
-  const index = Math.floor(hashToUnit(id) * colors.length);
-  return colors[Math.min(index, colors.length - 1)];
-}
-
-function weather(hex: string, id: number): string {
-  const color = new THREE.Color(hex);
-  const hsl = { h: 0, s: 0, l: 0 };
-  color.getHSL(hsl);
-
-  const jitter = hashToUnit(id * 7.13) - 0.5;
-  hsl.l = THREE.MathUtils.clamp(hsl.l + jitter * 0.08, 0, 1);
-  hsl.s = THREE.MathUtils.clamp(hsl.s - Math.abs(jitter) * 0.04, 0, 1);
-
-  color.setHSL(hsl.h, hsl.s, hsl.l);
-  return `#${color.getHexString()}`;
-}
-
-function quantizeColor(hex: string, steps = 16): string {
-  const color = new THREE.Color(hex);
-  const hsl = { h: 0, s: 0, l: 0 };
-  color.getHSL(hsl);
-
-  const quantize = (v: number) => Math.round(v * steps) / steps;
-  color.setHSL(quantize(hsl.h), quantize(hsl.s), quantize(hsl.l));
-
-  return `#${color.getHexString()}`;
-}
-
-export function resolveBuildingMaterial(
-  id: number,
-  buildingType: string | undefined,
-  facadeMaterial: string | undefined,
-  facadeColour: string | undefined,
-): BuildingMaterialInfo {
-  const explicitColor = resolveExplicitColor(facadeColour);
-  const materialKey =
-    (facadeMaterial && Config.materialsByType[facadeMaterial]
-      ? facadeMaterial
-      : undefined) ??
-    (buildingType && Config.materialByBuildingType[buildingType]) ??
-    Config.defaultMaterial;
-
-  const materialParams = Config.materialsByType[materialKey];
-  const color =
-    explicitColor ??
-    quantizeColor(weather(pickVariant(materialParams.colors, id), id));
-  const source: BuildingMaterialInfo["source"] =
-    explicitColor || (facadeMaterial && Config.materialsByType[facadeMaterial])
-      ? "osm"
-      : "procedural";
-
-  return {
-    color,
-    roughness: materialParams.roughness,
-    metalness: materialParams.metalness,
-    source,
-  };
+  return new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    vertexColors: true,
+    lights: true,
+    uniforms,
+    polygonOffset: !!options.polygonOffset,
+    polygonOffsetFactor: options.polygonOffset?.factor ?? 0,
+    polygonOffsetUnits: options.polygonOffset?.units ?? 0,
+  });
 }

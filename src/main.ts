@@ -2,6 +2,7 @@ import Engine from "./three/core/Engine";
 
 import testBuildings from "./test-data/test-data.json";
 import loadBuildings from "./world/building/BuildingLoader";
+import { createGroundPlane } from "./world/ground/GroundPlane";
 import { batchBuildings } from "./world/building/BuildingBatcher";
 
 import { type BoundingBox, type GeoPoint } from "./geo/types";
@@ -43,7 +44,6 @@ async function loadWorld(engine: Engine) {
     for (const chunk of chunks)
       for (const mesh of chunk.meshes) engine.add(mesh);
 
-    engine.refreshShadows();
     loading.hidden = true;
   } catch (err) {
     console.error("Failed to load buildings:", err);
@@ -56,6 +56,9 @@ async function loadWorld(engine: Engine) {
 async function main() {
   const engine = new Engine();
   engine.init();
+
+  const ground = createGroundPlane();
+  engine.add(ground);
 
   retry.addEventListener("click", () => loadWorld(engine));
   await loadWorld(engine);

@@ -68,7 +68,7 @@ export default class Clouds {
         uModelViewMatrix: { value: new THREE.Matrix4() },
         uCameraNear: { value: Config.camera.near },
         uCameraFar: { value: Config.camera.far },
-        uIsLogDepth: { value: true },
+        uIsLogDepth: { value: false },
         uSunColor: { value: new THREE.Color(lighting.sunColor) },
         uSunIntensity: { value: lighting.sunIntensity },
         uLightDir: { value: Config.lighting.sun.position.clone().normalize() },

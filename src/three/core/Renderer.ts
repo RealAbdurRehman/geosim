@@ -5,7 +5,6 @@ export default class Renderer {
   constructor() {
     this.instance = new THREE.WebGLRenderer({
       antialias: true,
-      logarithmicDepthBuffer: true,
       powerPreference: "high-performance",
       precision: "highp",
     });
@@ -15,9 +14,6 @@ export default class Renderer {
   private init(): void {
     this.instance.outputColorSpace = THREE.SRGBColorSpace;
     this.instance.toneMapping = THREE.ACESFilmicToneMapping;
-    this.instance.toneMappingExposure = 1.2;
-    this.instance.shadowMap.enabled = true;
-    this.instance.shadowMap.type = THREE.PCFShadowMap;
     this.instance.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.resize();
 
